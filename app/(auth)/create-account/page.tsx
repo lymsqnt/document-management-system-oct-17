@@ -1,4 +1,4 @@
-   import CreateAccount from "@/components/auth/create-account";
+   import CreateAccount from "@/components/shared/auth/create-account";
 
    export default function CreateAccountPage() {
      return <CreateAccount />;
