@@ -16,7 +16,7 @@ import {
   getStudentDocuments,
   STUDENT_DOCUMENTS_UPDATED_EVENT,
 } from "@/lib/storage/student-documents";
-import { buildStudentSummaries } from "@/lib/students";
+import { buildStudentSummaries } from "@/lib/services/students";
 import type { StudentSummary } from "@/lib/types/student";
 import type { DocumentRequest } from "@/lib/types/request";
 

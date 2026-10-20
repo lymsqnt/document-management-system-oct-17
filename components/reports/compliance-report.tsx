@@ -22,14 +22,14 @@ import {
   summarizeByDocument,
   summarizeCompliance,
   type ComplianceStatus,
-} from "@/lib/reports";
+} from "@/lib/services/reports";
 import { getCurrentUser } from "@/lib/storage/accounts";
 import {
   getStudentDocuments,
   STUDENT_DOCUMENTS_KEY,
   STUDENT_DOCUMENTS_UPDATED_EVENT,
 } from "@/lib/storage/student-documents";
-import { buildStudentSummaries } from "@/lib/students";
+import { buildStudentSummaries } from "@/lib/services/students";
 import type { StudentSummary } from "@/lib/types/student";
 
 import ReportFilters, {

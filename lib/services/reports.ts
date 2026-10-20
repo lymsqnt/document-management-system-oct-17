@@ -1,5 +1,5 @@
 import { DOCUMENT_TYPES } from "@/lib/constants/student";
-import { getMissingDocuments } from "@/lib/students";
+import { getMissingDocuments } from "@/lib/services/students";
 import type { StudentSummary } from "@/lib/types/student";
 
 /** A student is Completed once every required document is submitted. */

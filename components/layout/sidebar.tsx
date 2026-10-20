@@ -82,7 +82,7 @@ const navigationGroups: NavigationGroup[] = [
       },
       {
         label: "Audit Logs",
-        href: "/audit-logs-page",
+        href: "/audit-logs",
         icon: History,
       },
       {

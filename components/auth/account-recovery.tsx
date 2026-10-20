@@ -10,7 +10,7 @@ import Checkbox from "@/components/ui/checkbox";
 import RecoveryCheckEmail from "@/components/auth/recovery-check-email";
 import RecoverySuccess from "@/components/auth/recovery-success";
 import ResetPasswordForm from "@/components/auth/reset-password-form";
-import { findAccountByEmail, resetPasswordByEmail } from "@/lib/auth";
+import { findAccountByEmail, resetPasswordByEmail } from "@/lib/services/auth";
 import {
   validateAccountRecovery,
   type AccountRecoveryErrors,

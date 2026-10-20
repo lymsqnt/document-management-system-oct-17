@@ -1,4 +1,4 @@
-import type { summarizeByDocument } from "@/lib/reports";
+import type { summarizeByDocument } from "@/lib/services/reports";
 
 type DocumentSummary = ReturnType<typeof summarizeByDocument>[number];
 

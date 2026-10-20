@@ -34,7 +34,7 @@ import {
   updateProfile,
   updatePassword,
   getAccountPassword,
-} from "@/lib/auth";
+} from "@/lib/services/auth";
 import { getCurrentUser } from "@/lib/storage/accounts";
 import type { UserProfile } from "@/lib/types/account";
 import { validateProfilePhoto } from "@/lib/validations/files";

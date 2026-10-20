@@ -37,7 +37,7 @@ import {
   buildStudentSummaries,
   getCourseLabel,
   getYearSortValue,
-} from "@/lib/students";
+} from "@/lib/services/students";
 import type { StudentSummary as Student } from "@/lib/types/student";
 import StudentFilters, {
   type FilterState,

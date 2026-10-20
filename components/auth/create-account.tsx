@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { UserRoundPlus, UserRound, AtSign,Mail, BriefcaseBusiness, LockKeyhole, Building2, Eye, EyeOff, } from "lucide-react";
 
-import { createAccount } from "@/lib/auth";
+import { createAccount } from "@/lib/services/auth";
 import { getAccounts } from "@/lib/storage/accounts";
 import { validateCreateAccount, type CreateAccountData, type CreateAccountErrors,} from "@/lib/validations/create-account";
 

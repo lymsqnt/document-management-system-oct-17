@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import Sidebar from "@/components/layout/sidebar";
 import Topbar from "@/components/layout/topbar";
-import { listUsers, type UserPresence, type UserRow } from "@/lib/users";
+import { listUsers, type UserPresence, type UserRow } from "@/lib/services/users";
 
 const PAGE_SIZE = 8;
 

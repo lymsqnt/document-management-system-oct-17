@@ -23,7 +23,7 @@ import {
   STUDENT_DOCUMENTS_UPDATED_EVENT,
 } from "@/lib/storage/student-documents";
 import type { StudentDocument } from "@/lib/types/student";
-import { buildStudentSummaries, getMissingDocuments } from "@/lib/students";
+import { buildStudentSummaries, getMissingDocuments } from "@/lib/services/students";
 
 type DashboardStudent = {
   studentId: string;

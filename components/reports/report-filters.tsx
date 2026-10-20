@@ -8,7 +8,7 @@ import {
   Printer,
   RotateCcw,
 } from "lucide-react";
-import type { ComplianceStatus } from "@/lib/reports";
+import type { ComplianceStatus } from "@/lib/services/reports";
 
 export type ReportFiltersState = {
   course: string;

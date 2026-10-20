@@ -1,6 +1,6 @@
 import { Check, X } from "lucide-react";
 import { DOCUMENT_TYPES } from "@/lib/constants/student";
-import { getComplianceStatus, type ComplianceStatus } from "@/lib/reports";
+import { getComplianceStatus, type ComplianceStatus } from "@/lib/services/reports";
 import type { StudentSummary } from "@/lib/types/student";
 
 type StudentComplianceTableProps = {

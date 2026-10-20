@@ -1,5 +1,5 @@
 import { DOCUMENT_TYPES } from "@/lib/constants/student";
-import type { summarizeByCourse } from "@/lib/reports";
+import type { summarizeByCourse } from "@/lib/services/reports";
 
 type CourseSummary = ReturnType<typeof summarizeByCourse>[number];
 

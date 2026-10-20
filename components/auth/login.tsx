@@ -10,7 +10,7 @@ import InputPass from "@/components/ui/inputpass";
 import Button from "@/components/ui/button";
 import Checkbox from "@/components/ui/checkbox";
 
-import { login } from "@/lib/auth";
+import { login } from "@/lib/services/auth";
 import {
   getRememberedUsername,
   saveRememberedUsername,
@@ -213,7 +213,7 @@ export default function Login() {
                 />
 
                 <Link
-                  href="/Account-recovery"
+                  href="/account-recovery"
                   className="text-sm font-medium text-blue-700 underline-offset-2 transition hover:text-blue-900 hover:underline"
                 >
                   Forgot Password
@@ -252,7 +252,7 @@ export default function Login() {
                   Don't have an account?
                 </span>
                 <Link
-                  href="/Create-Account"
+                  href="/create-account"
                   className="font-semibold text-blue-800 transition hover:text-blue-600 hover:underline"
                 >
                   Create Account

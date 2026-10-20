@@ -41,7 +41,7 @@ import {
 } from "@/lib/storage/student-documents";
 import type { StudentDocument } from "@/lib/types/student";
 import { validateDocumentFile } from "@/lib/validations/files";
-import { validateStudentDocumentForm } from "@/lib/validations/students-documents";
+import { validateStudentDocumentForm } from "@/lib/validations/student-documents";
 
 const getTodayDate = () => {
   const today = new Date();
