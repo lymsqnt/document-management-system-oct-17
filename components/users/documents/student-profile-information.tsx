@@ -26,7 +26,7 @@ import {
 import Sidebar from "@/components/users/layout/sidebar";
 import Topbar from "@/components/shared/layout/topbar";
 
-import { DOCUMENT_TYPES } from "@/lib/users/constants/student";
+import { COURSE_LABELS, DOCUMENT_TYPES } from "@/lib/users/constants/student";
 import { logActivity } from "@/lib/shared/storage/audit-logs";
 import {
   deleteStudentDocument,
@@ -243,6 +243,7 @@ export default function StudentProfileInformation() {
                   fileName: file.name,
                   fileData,
                   dateSubmitted: now,
+                  encodedAt: now,
                 }
               : document
         );
@@ -275,8 +276,11 @@ export default function StudentProfileInformation() {
         course: student.course,
         major: student.major,
         yearLevel: student.yearLevel,
+        schoolYear: student.schoolYear,
         documentType,
         dateSubmitted: now,
+        encodedAt: now,
+        approvalStatus: student.approvalStatus ?? "approved",
         email: student.email,
         remarks: "",
         fileName: file.name,
@@ -557,7 +561,7 @@ export default function StudentProfileInformation() {
               </div>
 
               {/* INFORMATION SUMMARY */}
-              <div className="mt-6 grid grid-cols-1 overflow-hidden rounded-xl bg-[#f1f4ff] sm:grid-cols-2 lg:grid-cols-5">
+              <div className="mt-6 grid grid-cols-1 overflow-hidden rounded-xl bg-[#f1f4ff] sm:grid-cols-2 lg:grid-cols-6">
                 {/* STUDENT NUMBER */}
                 <div className="flex items-center gap-3 border-b border-slate-200 p-4 sm:border-r lg:border-b-0">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600">
@@ -587,7 +591,7 @@ export default function StudentProfileInformation() {
                     </p>
 
                     <p className="mt-1 text-xs font-medium text-slate-600">
-                      {student.course || "—"}
+                      {student.course ? COURSE_LABELS[student.course] ?? student.course : "—"}
                     </p>
 
                     {student.major &&
@@ -612,6 +616,23 @@ export default function StudentProfileInformation() {
 
                     <p className="mt-1 text-xs text-slate-500">
                       {student.yearLevel || "—"}
+                    </p>
+                  </div>
+                </div>
+
+                {/* SCHOOL YEAR */}
+                <div className="flex items-center gap-3 border-b border-slate-200 p-4 sm:border-r lg:border-b-0">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-indigo-600">
+                    <CalendarDays size={19} />
+                  </div>
+
+                  <div>
+                    <p className="text-[10px] font-semibold text-slate-700">
+                      School Year
+                    </p>
+
+                    <p className="mt-1 text-xs text-slate-500">
+                      {student.schoolYear || "—"}
                     </p>
                   </div>
                 </div>

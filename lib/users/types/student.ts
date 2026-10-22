@@ -1,4 +1,5 @@
 export type EnrollmentStatus = "Enrolled" | "Graduated" | "Transferred";
+export type StudentApprovalStatus = "pending" | "approved" | "rejected";
 
 /**
  * One submitted document. A student is the group of documents that share a
@@ -13,9 +14,15 @@ export type StudentDocument = {
   course?: string;
   major?: string;
   yearLevel?: string;
+  schoolYear?: string;
   enrollmentStatus?: EnrollmentStatus;
   documentType: string;
   dateSubmitted: string;
+  /** Exact time this record was encoded, separate from the user-entered submission date. */
+  encodedAt?: string;
+  approvalStatus?: StudentApprovalStatus;
+  approvalReviewedAt?: string;
+  approvalReviewedBy?: string;
   email: string;
   remarks?: string;
   fileName: string;

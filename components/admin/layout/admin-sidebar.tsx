@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { getCurrentUser } from "@/lib/shared/storage/accounts";
-import { LayoutDashboard, ClipboardCheck, ClipboardList, BarChart3, Users, History, ShieldCheck, LogOut, X } from "lucide-react";
+import { LayoutDashboard, ClipboardCheck, ClipboardList, BarChart3, Users, History, ShieldCheck, LogOut, X, UserRoundCheck } from "lucide-react";
 
 type Props = { isOpen: boolean; onClose: () => void };
 type Item = { label: string; href: string; icon: typeof LayoutDashboard };
@@ -13,6 +13,7 @@ const groups: Group[] = [
   { label: "Main", items: [
     { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
     { label: "Account Registration Approval", href: "/admin/account-registration-approval", icon: ClipboardCheck },
+    { label: "Student Encoding Approval", href: "/admin/student-approvals", icon: UserRoundCheck },
     { label: "Document Request Approval", href: "/admin/requests", icon: ClipboardList },
   ] },
   { label: "Management", items: [

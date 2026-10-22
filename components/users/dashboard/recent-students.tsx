@@ -8,13 +8,14 @@ type Student = {
   yearLevel: string;
   email: string;
   dateSubmitted: string;
+  encodedAt?: string;
   profileImage?: string;
 };
 
 type RecentStudentsProps = {
   students: Student[];
-  onViewStudent: (studentId: string) => void;
-  onViewAll: () => void;
+  onViewStudent?: (studentId: string) => void;
+  onViewAll?: () => void;
 };
 
 function formatDate(value: string) {
@@ -30,6 +31,8 @@ function formatDate(value: string) {
 
 function formatTime(value: string) {
   if (!value) return "";
+  // Legacy records only stored a date; showing their UTC-parsed value as 08:00 AM is misleading.
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return "—";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
   return date.toLocaleTimeString("en-US", {
@@ -73,13 +76,11 @@ export default function RecentStudents({
           </h2>
         </div>
 
-        <button
-          type="button"
-          onClick={onViewAll}
-          className="text-xs font-medium text-blue-600 hover:underline"
-        >
-          View All
-        </button>
+        {onViewAll && (
+          <button type="button" onClick={onViewAll} className="text-xs font-medium text-blue-600 hover:underline">
+            View All
+          </button>
+        )}
       </div>
 
       {/* STUDENTS */}
@@ -100,7 +101,9 @@ export default function RecentStudents({
           </div>
         ) : (
           <div className="divide-y divide-slate-100 border-t border-slate-100">
-            {students.map((student, index) => (
+            {students.map((student, index) => {
+              const encodedTimestamp = student.encodedAt || student.dateSubmitted;
+              return (
               <div
                 key={student.studentId}
                 className="flex min-w-0 items-center gap-3 px-5 py-4"
@@ -140,10 +143,10 @@ export default function RecentStudents({
                 {/* DATE */}
                 <div className="shrink-0 text-right">
                   <p className="text-xs text-slate-500">
-                    {formatDate(student.dateSubmitted)}
+                    {formatDate(encodedTimestamp)}
                   </p>
                   <p className="text-xs text-slate-500">
-                    {formatTime(student.dateSubmitted)}
+                    {formatTime(encodedTimestamp)}
                   </p>
                 </div>
 
@@ -154,16 +157,19 @@ export default function RecentStudents({
                 </span>
 
                 {/* VIEW */}
-                <button
-                  type="button"
-                  onClick={() => onViewStudent(student.studentId)}
-                  aria-label={`View ${student.studentName}`}
-                  className="rounded-md p-1.5 text-blue-600 transition hover:bg-blue-50"
-                >
-                  <Eye size={16} />
-                </button>
+                {onViewStudent && (
+                  <button
+                    type="button"
+                    onClick={() => onViewStudent(student.studentId)}
+                    aria-label={`View ${student.studentName}`}
+                    className="rounded-md p-1.5 text-blue-600 transition hover:bg-blue-50"
+                  >
+                    <Eye size={16} />
+                  </button>
+                )}
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

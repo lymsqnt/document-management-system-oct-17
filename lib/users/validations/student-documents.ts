@@ -142,6 +142,7 @@ export type StudentDocumentForm = {
   course: string;
   major: string;
   yearLevel: string;
+  schoolYear: string;
   documentType: string;
   dateSubmitted: string;
   hasFile: boolean;
@@ -174,6 +175,12 @@ export function validateStudentDocumentForm(
     return fieldError;
   }
 
+  const schoolYear = form.schoolYear.trim();
+  const schoolYearMatch = /^(\d{4})-(\d{4})$/.exec(schoolYear);
+  if (!schoolYearMatch || Number(schoolYearMatch[2]) !== Number(schoolYearMatch[1]) + 1) {
+    return "Enter a valid school year (for example, 2025-2026).";
+  }
+
   if (!form.dateSubmitted) {
     return "Date submitted is required.";
   }
@@ -185,6 +192,7 @@ export function validateStudentDocumentForm(
   if (
     existingDocuments.some(
       (document) => document.studentId?.trim().toUpperCase() === studentId
+        && (document.approvalStatus === undefined || document.approvalStatus === "approved" || document.approvalStatus === "pending")
     )
   ) {
     return `Student ID ${studentId} already exists.`;
@@ -195,6 +203,7 @@ export function validateStudentDocumentForm(
   if (
     existingDocuments.some(
       (document) => normalizeStudentName(document.studentName) === studentName
+        && (document.approvalStatus === undefined || document.approvalStatus === "approved" || document.approvalStatus === "pending")
     )
   ) {
     return "A student with this name already exists.";

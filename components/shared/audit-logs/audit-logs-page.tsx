@@ -27,6 +27,8 @@ const actionStyles: Record<AuditAction, string> = {
   "Student Deleted": "bg-red-50 text-red-700",
   "Account Approved": "bg-emerald-50 text-emerald-700",
   "Account Rejected": "bg-rose-50 text-rose-700",
+  "Student Encoding Approved": "bg-emerald-50 text-emerald-700",
+  "Student Encoding Rejected": "bg-rose-50 text-rose-700",
   "Role Created": "bg-indigo-50 text-indigo-700",
   "Role Updated": "bg-blue-50 text-blue-700",
   "Role Deleted": "bg-slate-100 text-slate-700",

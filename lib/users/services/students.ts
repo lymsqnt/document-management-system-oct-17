@@ -79,7 +79,7 @@ export function buildStudentSummaries(
 ): StudentSummary[] {
   const studentMap = new Map<string, StudentSummary>();
 
-  documents.forEach((doc) => {
+  documents.filter((doc) => doc.approvalStatus === undefined || doc.approvalStatus === "approved").forEach((doc) => {
     const studentId = doc.studentId?.trim();
 
     if (!studentId) return;

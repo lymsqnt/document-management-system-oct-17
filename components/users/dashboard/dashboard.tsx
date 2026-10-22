@@ -33,6 +33,7 @@ type DashboardStudent = {
   yearLevel: string;
   email: string;
   dateSubmitted: string;
+  encodedAt: string;
   profileImage?: string;
 };
 
@@ -82,7 +83,9 @@ export default function Dashboard() {
     if (typeof window === "undefined") return;
 
     try {
-      const records = getStudentDocuments();
+      const records = getStudentDocuments().filter(
+        (record) => record.approvalStatus === undefined || record.approvalStatus === "approved"
+      );
       setDocuments(records);
       const studentSummaries = buildStudentSummaries(records);
       setMissingDocumentsCount(
@@ -109,19 +112,23 @@ export default function Dashboard() {
             yearLevel: record.yearLevel || "—",
             email: record.email || "",
             dateSubmitted: record.dateSubmitted || "",
+            encodedAt: record.encodedAt || "",
             profileImage: record.profileImage,
           });
           return;
         }
 
-        const existingTime = new Date(existing.dateSubmitted).getTime();
-        const currentTime = new Date(record.dateSubmitted).getTime();
+        const existingTimestamp = existing.encodedAt || existing.dateSubmitted;
+        const currentTimestamp = record.encodedAt || record.dateSubmitted;
+        const existingTime = new Date(existingTimestamp).getTime();
+        const currentTime = new Date(currentTimestamp).getTime();
 
         if (
           !Number.isNaN(currentTime) &&
           (Number.isNaN(existingTime) || currentTime > existingTime)
         ) {
-          existing.dateSubmitted = record.dateSubmitted;
+          existing.dateSubmitted = record.dateSubmitted || existing.dateSubmitted;
+          existing.encodedAt = record.encodedAt || "";
           if (record.profileImage) {
             existing.profileImage = record.profileImage;
           }
@@ -129,8 +136,8 @@ export default function Dashboard() {
       });
 
       const sortedStudents = Array.from(studentMap.values()).sort((a, b) => {
-        const dateA = new Date(a.dateSubmitted).getTime();
-        const dateB = new Date(b.dateSubmitted).getTime();
+        const dateA = new Date(a.encodedAt || a.dateSubmitted).getTime();
+        const dateB = new Date(b.encodedAt || b.dateSubmitted).getTime();
 
         if (Number.isNaN(dateA) && Number.isNaN(dateB)) return 0;
         if (Number.isNaN(dateA)) return 1;

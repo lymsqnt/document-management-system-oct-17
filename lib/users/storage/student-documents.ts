@@ -1,4 +1,4 @@
-import type { StudentDocument } from "@/lib/users/types/student";
+import type { StudentApprovalStatus, StudentDocument } from "@/lib/users/types/student";
 
 export const STUDENT_DOCUMENTS_KEY = "demo-student-documents";
 
@@ -38,11 +38,49 @@ export function getDocumentsByStudentId(studentId: string): StudentDocument[] {
 
   return getStudentDocuments().filter(
     (document) => normalizeStudentId(document.studentId) === id
+      && (document.approvalStatus === undefined || document.approvalStatus === "approved")
   );
+}
+
+/** Updates the approval decision for every credential belonging to a student. */
+export function reviewStudentEncoding(
+  studentId: string,
+  status: Extract<StudentApprovalStatus, "approved" | "rejected">,
+  reviewedBy: string,
+): boolean {
+  const id = normalizeStudentId(studentId);
+  const documents = getStudentDocuments();
+  let foundPending = false;
+  const reviewedAt = new Date().toISOString();
+  const updated = documents.map((document) => {
+    if (normalizeStudentId(document.studentId) !== id || document.approvalStatus !== "pending") {
+      return document;
+    }
+    foundPending = true;
+    return { ...document, approvalStatus: status, approvalReviewedAt: reviewedAt, approvalReviewedBy: reviewedBy };
+  });
+  if (!foundPending) return false;
+  saveStudentDocuments(updated);
+  return true;
 }
 
 export function addStudentDocument(document: StudentDocument): void {
   saveStudentDocuments([...getStudentDocuments(), document]);
+}
+
+/** Adds multiple credentials for one student in a single storage update. */
+export function addStudentDocuments(documents: StudentDocument[]): void {
+  const pendingDocuments = documents.map((document) => ({
+    ...document,
+    approvalStatus: "pending" as const,
+    approvalReviewedAt: undefined,
+    approvalReviewedBy: undefined,
+  }));
+  const resubmittedIds = new Set(pendingDocuments.map((document) => normalizeStudentId(document.studentId)));
+  const existing = getStudentDocuments().filter((document) =>
+    !(document.approvalStatus === "rejected" && resubmittedIds.has(normalizeStudentId(document.studentId)))
+  );
+  saveStudentDocuments([...existing, ...pendingDocuments]);
 }
 
 /** Replaces documents with the same id and adds the ones that are new. */

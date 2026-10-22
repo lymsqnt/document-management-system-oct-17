@@ -2,6 +2,7 @@
 
 import {
   ChangeEvent,
+  DragEvent as ReactDragEvent,
   FormEvent,
   useEffect,
   useMemo,
@@ -19,7 +20,8 @@ import {
   MessageSquare,
   UploadCloud,
   UserRound,
-  X,
+  Plus,
+  Trash2,
 } from "lucide-react";
 
 import Sidebar from "@/components/users/layout/sidebar";
@@ -36,7 +38,7 @@ import {
 } from "@/lib/users/constants/student";
 import { logActivity } from "@/lib/shared/storage/audit-logs";
 import {
-  addStudentDocument,
+  addStudentDocuments,
   getStudentDocuments,
 } from "@/lib/users/storage/student-documents";
 import type { StudentDocument } from "@/lib/users/types/student";
@@ -53,6 +55,20 @@ const getTodayDate = () => {
   return `${year}-${month}-${day}`;
 };
 
+type CredentialDraft = {
+  id: string;
+  documentType: string;
+  selectedFile: File | null;
+  filePreview: string;
+};
+
+const createCredentialDraft = (): CredentialDraft => ({
+  id: crypto.randomUUID(),
+  documentType: "",
+  selectedFile: null,
+  filePreview: "",
+});
+
 export default function DocumentList() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -61,21 +77,19 @@ export default function DocumentList() {
   const [course, setCourse] = useState("");
   const [major, setMajor] = useState("");
   const [yearLevel, setYearLevel] = useState("");
-  const [documentType, setDocumentType] = useState("");
+  const [schoolYear, setSchoolYear] = useState("");
   const [dateSubmitted, setDateSubmitted] =
     useState(getTodayDate());
   const [email, setEmail] = useState("");
   const [remarks, setRemarks] = useState("");
 
-  const [selectedFile, setSelectedFile] =
-    useState<File | null>(null);
-  const [filePreview, setFilePreview] = useState("");
+  const [credentials, setCredentials] = useState<CredentialDraft[]>([
+    { id: "credential-initial", documentType: "", selectedFile: null, filePreview: "" },
+  ]);
+  const [draggingCredentialId, setDraggingCredentialId] = useState<string | null>(null);
 
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-
-  const fileInputRef =
-    useRef<HTMLInputElement | null>(null);
 
   const dateInputRef =
     useRef<HTMLInputElement | null>(null);
@@ -114,13 +128,7 @@ export default function DocumentList() {
     };
   }, []);
 
-  const handleFileChange = (
-    event: ChangeEvent<HTMLInputElement>
-  ) => {
-    const file = event.target.files?.[0];
-
-    if (!file) return;
-
+  const handleCredentialFile = (credentialId: string, file: File) => {
     setError("");
     setMessage("");
 
@@ -128,29 +136,64 @@ export default function DocumentList() {
 
     if (fileError) {
       setError(fileError);
-
-      event.target.value = "";
       return;
     }
-
-    setSelectedFile(file);
 
     const reader = new FileReader();
 
     reader.onload = () => {
-      setFilePreview(String(reader.result));
+      setCredentials((current) => current.map((credential) =>
+        credential.id === credentialId
+          ? { ...credential, selectedFile: file, filePreview: String(reader.result) }
+          : credential
+      ));
     };
 
     reader.readAsDataURL(file);
   };
 
-  const handleRemoveFile = () => {
-    setSelectedFile(null);
-    setFilePreview("");
+  const handleFileChange = (
+    credentialId: string,
+    event: ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    if (file) handleCredentialFile(credentialId, file);
+  };
 
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
+  const handleFileDrop = (credentialId: string, event: ReactDragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setDraggingCredentialId(null);
+    const file = event.dataTransfer.files?.[0];
+    if (file) handleCredentialFile(credentialId, file);
+  };
+
+  const handleRemoveFile = (credentialId: string) => {
+    setCredentials((current) => current.map((credential) =>
+      credential.id === credentialId
+        ? { ...credential, selectedFile: null, filePreview: "" }
+        : credential
+    ));
+    const input = document.getElementById(`credential-file-${credentialId}`) as HTMLInputElement | null;
+    if (input) input.value = "";
+  };
+
+  const handleRemoveCredential = (credentialId: string) => {
+    const input = document.getElementById(`credential-file-${credentialId}`) as HTMLInputElement | null;
+    if (input) input.value = "";
+
+    setCredentials((current) => current.length > 1
+      ? current.filter((credential) => credential.id !== credentialId)
+      : current.map((credential) => credential.id === credentialId
+        ? { ...credential, documentType: "", selectedFile: null, filePreview: "" }
+        : credential
+      )
+    );
+  };
+
+  const updateCredentialType = (credentialId: string, documentType: string) => {
+    setCredentials((current) => current.map((credential) =>
+      credential.id === credentialId ? { ...credential, documentType } : credential
+    ));
   };
 
   const handleCourseChange = (
@@ -198,9 +241,10 @@ export default function DocumentList() {
         course,
         major,
         yearLevel,
-        documentType,
+        schoolYear,
+        documentType: credentials[0]?.documentType || DOCUMENT_TYPES[0],
         dateSubmitted,
-        hasFile: Boolean(selectedFile && filePreview),
+        hasFile: true,
       },
       getStudentDocuments()
     );
@@ -210,48 +254,62 @@ export default function DocumentList() {
       return;
     }
 
-    if (!selectedFile) return;
+    if (credentials.some((credential) => !credential.documentType || !credential.selectedFile || !credential.filePreview)) {
+      setError("Choose a document type and upload a file for every credential.");
+      return;
+    }
+
+    const selectedTypes = credentials.map((credential) => credential.documentType);
+    if (new Set(selectedTypes).size !== selectedTypes.length) {
+      setError("Each credential must have a different document type.");
+      return;
+    }
 
     try {
-      const newDocument: StudentDocument = {
+      const normalizedStudentName = studentName.trim().replace(/\s+/g, " ");
+      const normalizedStudentId = studentId.trim().toUpperCase();
+      const encodedAt = new Date().toISOString();
+      const newDocuments: StudentDocument[] = credentials.map((credential) => ({
         id: crypto.randomUUID(),
-        studentId: studentId.trim().toUpperCase(),
-        studentName: studentName
-          .trim()
-          .replace(/\s+/g, " "),
+        studentId: normalizedStudentId,
+        studentName: normalizedStudentName,
         course: course.trim(),
         major: major.trim(),
         yearLevel: yearLevel.trim(),
-        documentType,
+        schoolYear: schoolYear.trim(),
+        documentType: credential.documentType,
         dateSubmitted,
+        encodedAt,
+        approvalStatus: "pending",
         email: email.trim().toLowerCase(),
         remarks: remarks.trim(),
-        fileName: selectedFile.name,
-        fileData: filePreview,
-      };
+        fileName: credential.selectedFile!.name,
+        fileData: credential.filePreview,
+      }));
 
-      addStudentDocument(newDocument);
+      addStudentDocuments(newDocuments);
 
-      logActivity({
+      newDocuments.forEach((document) => logActivity({
         action: "Document Uploaded",
         resourceType: "Document",
-        resource: `${documentType} - ${newDocument.studentName}`,
-        details: `Added student ${newDocument.studentName} (${newDocument.studentId}) with ${documentType}.`,
-      });
+        resource: `${document.documentType} - ${document.studentName}`,
+        details: `Added student ${document.studentName} (${document.studentId}) with ${document.documentType}.`,
+      }));
+
+      const uploadedCount = newDocuments.length;
       setStudentId("");
       setStudentName("");
       setCourse("");
       setMajor("");
       setYearLevel("");
-      setDocumentType("");
+      setSchoolYear("");
       setDateSubmitted(getTodayDate());
       setEmail("");
       setRemarks("");
-
-      handleRemoveFile();
+      setCredentials([createCredentialDraft()]);
 
       setMessage(
-        `${documentType} submitted successfully for ${newDocument.studentName}.`
+        `${uploadedCount} credential${uploadedCount === 1 ? "" : "s"} submitted for admin approval for ${normalizedStudentName}.`
       );
     } catch {
       setError(
@@ -306,8 +364,8 @@ export default function DocumentList() {
             </div>
 
             <form onSubmit={handleSubmit}>
-              <div className="grid grid-cols-1 gap-5 sm:gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
-                {/* LEFT SIDE */}
+              <div className="grid grid-cols-1 gap-5 sm:gap-6">
+                {/* STUDENT INFORMATION — fields retained as-is */}
                 <div className="space-y-3">
                   {/* STUDENT ID + NAME */}
                   <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
@@ -457,30 +515,19 @@ export default function DocumentList() {
                     </div>
                   </label>
 
-                  {/* DOCUMENT TYPE */}
+                  {/* SCHOOL YEAR */}
                   <label className="block">
                     <span className="mb-1 block text-xs font-medium">
-                      Document Type{" "}
-                      <span className="text-red-500">*</span>
+                      School Year <span className="text-red-500">*</span>
                     </span>
-
-                    <div className="flex items-center gap-2">
-                      <FileText
-                        size={16}
-                        className="shrink-0 text-slate-400"
-                      />
-
-                      <Select
-                        value={documentType}
-                        onChange={setDocumentType}
-                        placeholder="Select document type"
-                        options={DOCUMENT_TYPES.map(
-                          (type) => ({
-                            label: type,
-                            value: type,
-                          })
-                        )}
-                        className="flex-1"
+                    <div className="flex h-9 items-center rounded-md border border-slate-300 bg-white px-3 transition-all duration-200 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100">
+                      <input
+                        value={schoolYear}
+                        onChange={(event) => setSchoolYear(event.target.value)}
+                        placeholder="e.g. 2025-2026"
+                        inputMode="numeric"
+                        maxLength={9}
+                        className="w-full bg-transparent font-sans text-xs outline-none"
                       />
                     </div>
                   </label>
@@ -568,72 +615,94 @@ export default function DocumentList() {
                   </label>
                 </div>
 
-                {/* RIGHT SIDE - UPLOAD */}
-                <div className="border-t border-slate-200 pt-5 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
-                  <span className="mb-2 block text-xs font-medium">
-                    Upload File{" "}
-                    <span className="text-red-500">*</span>
-                  </span>
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      fileInputRef.current?.click()
-                    }
-                    className="flex h-[240px] w-full flex-col items-center justify-center rounded-md border border-dashed border-blue-300 bg-[#f1efff] px-4 text-center transition hover:bg-[#ebe8ff]"
-                  >
-                    <UploadCloud
-                      size={36}
-                      className="mb-3 text-blue-600"
-                    />
-
-                    {selectedFile ? (
-                      <>
-                        <p className="max-w-full break-all text-xs font-medium text-blue-700">
-                          {selectedFile.name}
-                        </p>
-
-                        <p className="mt-1 text-[10px] text-slate-500">
-                          Click to change file
-                        </p>
-                      </>
-                    ) : (
-                      <>
-                        <p className="text-[11px] text-slate-600">
-                          Drag and Drop your file here
-                        </p>
-
-                        <p className="text-[10px] text-slate-500">
-                          or click to browse
-                        </p>
-                      </>
-                    )}
-                  </button>
-
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                    onChange={handleFileChange}
-                    className="hidden"
-                  />
-
-                  {selectedFile && (
-                    <button
-                      type="button"
-                      onClick={handleRemoveFile}
-                      className="mt-2 flex items-center gap-1 text-[10px] text-red-600 hover:underline"
-                    >
-                      <X size={12} />
-                      Remove selected file
-                    </button>
-                  )}
-
-                  <p className="mt-2 text-[9px] text-slate-400">
-                    Maximum file size: 5MB
-                  </p>
-                </div>
               </div>
+
+              <section className="mt-6 border-t border-slate-200 pt-5" aria-labelledby="credentials-heading">
+                <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <h3 id="credentials-heading" className="text-sm font-semibold text-slate-800">Credentials to Upload</h3>
+                    <p className="mt-1 text-[10px] text-slate-500">Choose a document type and upload its file. Add a row for each credential.</p>
+                  </div>
+                  <span className="rounded-full bg-blue-50 px-3 py-1 text-[10px] font-semibold text-blue-700">
+                    {credentials.length} credential{credentials.length === 1 ? "" : "s"}
+                  </span>
+                </div>
+
+                <div className="space-y-3">
+                  {credentials.map((credential, index) => (
+                    <div key={credential.id} className="grid items-end gap-3 rounded-lg border border-slate-200 bg-white p-3 sm:grid-cols-[36px_minmax(0,0.85fr)_minmax(0,1.15fr)_36px] sm:gap-4 sm:p-4">
+                      <span className="pb-2 text-[10px] font-semibold text-slate-500">{String(index + 1).padStart(2, "0")}</span>
+
+                      <label className="block">
+                        <span className="mb-1 block text-xs font-medium">Document Type <span className="text-red-500">*</span></span>
+                        <Select
+                          value={credential.documentType}
+                          onChange={(value) => updateCredentialType(credential.id, value)}
+                          placeholder="Select document type"
+                          options={DOCUMENT_TYPES.map((type) => ({ label: type, value: type }))}
+                          className="w-full"
+                        />
+                      </label>
+
+                      <div className="min-w-0">
+                        <span className="mb-1 block text-xs font-medium">Upload File <span className="text-red-500">*</span></span>
+                        <div
+                          onDragEnter={(event) => { event.preventDefault(); setDraggingCredentialId(credential.id); }}
+                          onDragOver={(event) => { event.preventDefault(); event.dataTransfer.dropEffect = "copy"; }}
+                          onDragLeave={(event) => {
+                            if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDraggingCredentialId(null);
+                          }}
+                          onDrop={(event) => handleFileDrop(credential.id, event)}
+                          className={`flex min-h-14 flex-wrap items-center gap-2 rounded-md border border-dashed px-2 py-2 transition ${draggingCredentialId === credential.id ? "border-blue-500 bg-blue-50" : "border-slate-300 bg-slate-50"}`}
+                        >
+                          <button
+                            type="button"
+                            onClick={() => document.getElementById(`credential-file-${credential.id}`)?.click()}
+                            className="inline-flex h-9 items-center gap-2 rounded-md border border-blue-200 bg-blue-50 px-3 text-xs font-medium text-blue-700 transition hover:bg-blue-100"
+                          >
+                            <UploadCloud size={15} />
+                            {credential.selectedFile ? "Change file" : "Upload file"}
+                          </button>
+                          <input
+                            id={`credential-file-${credential.id}`}
+                            type="file"
+                            accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                            onChange={(event) => handleFileChange(credential.id, event)}
+                            className="hidden"
+                          />
+                          {credential.selectedFile ? (
+                            <div className="flex min-w-0 flex-1 items-center gap-2 rounded-md bg-emerald-50 px-3 py-2 text-emerald-700">
+                              <FileText size={15} className="shrink-0" />
+                              <span className="min-w-0 flex-1 truncate text-[10px] font-medium" title={credential.selectedFile.name}>{credential.selectedFile.name}</span>
+                              <button type="button" onClick={() => handleRemoveFile(credential.id)} className="shrink-0 text-[10px] text-red-600 hover:underline">Remove</button>
+                            </div>
+                          ) : (
+                            <span className="text-[10px] text-slate-500">or drag a file here · PDF, JPG, PNG, DOC, DOCX · Max 5MB</span>
+                          )}
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveCredential(credential.id)}
+                        aria-label={`Remove credential ${index + 1}`}
+                        className="mb-1 inline-flex h-9 w-9 items-center justify-center rounded-md text-slate-400 transition hover:bg-red-50 hover:text-red-600"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setCredentials((current) => [...current, createCredentialDraft()])}
+                  className="mt-3 inline-flex h-9 items-center gap-2 rounded-md border border-dashed border-blue-300 px-3 text-xs font-medium text-blue-700 transition hover:bg-blue-50"
+                >
+                  <Plus size={15} /> Add another credential
+                </button>
+                <p className="mt-3 text-[10px] text-slate-500">Each credential is saved separately and linked to the same Student ID.</p>
+              </section>
 
               {/* MESSAGE */}
               {error && (
