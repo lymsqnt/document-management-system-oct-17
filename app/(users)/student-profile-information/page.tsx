@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import StudentProfileInformation from "@/components/users/documents/student-profile-information";
+import StudentProfileInformation from "@/components/shared/students/student-profile";
 
 export default function Page() {
   return (

@@ -4,8 +4,8 @@ export const ACCOUNTS_KEY = "demoAccounts";
 const CURRENT_USER_KEY = "currentUser";
 const REMEMBERED_USERNAME_KEY = "rememberedUsername";
 
-const DEMO_ADMIN = {
-  fullName: "Demo Administrator",
+const DEFAULT_ADMIN = {
+  fullName: "Administrator",
   username: "admin",
   email: "admin@qeci.edu.ph",
   role: "Administrator",
@@ -21,25 +21,27 @@ export function getAccounts(): DemoAccount[] {
     const storedAccounts = localStorage.getItem(ACCOUNTS_KEY);
 
     if (!storedAccounts) {
-      saveAccounts([DEMO_ADMIN]);
-      return [DEMO_ADMIN];
+      saveAccounts([DEFAULT_ADMIN]);
+      return [DEFAULT_ADMIN];
     }
 
     const parsedAccounts: unknown = JSON.parse(storedAccounts);
 
-    if (!Array.isArray(parsedAccounts)) return [DEMO_ADMIN];
+    if (!Array.isArray(parsedAccounts)) return [DEFAULT_ADMIN];
 
     const accounts = (parsedAccounts as DemoAccount[]).map((account) => ({
       ...account,
+      ...(account.email.toLowerCase() === DEFAULT_ADMIN.email && account.role === "Administrator"
+        ? { fullName: "Administrator" }
+        : {}),
       status: account.status ?? "approved",
     }));
-    // Always keep the demo login available, even when existing browser data
-    // already contains a different administrator account.
-    const hasDemoAdmin = accounts.some(
-      (account) => account.username.toLowerCase() === DEMO_ADMIN.username,
+    // Always keep the default admin login available in this local demo.
+    const hasDefaultAdmin = accounts.some(
+      (account) => account.username.toLowerCase() === DEFAULT_ADMIN.username,
     );
 
-    if (!hasDemoAdmin) accounts.unshift(DEMO_ADMIN);
+    if (!hasDefaultAdmin) accounts.unshift(DEFAULT_ADMIN);
     saveAccounts(accounts);
     return accounts;
   } catch {
@@ -64,7 +66,9 @@ export function getCurrentUser(): UserProfile | null {
     const user = JSON.parse(storedUser) as Partial<UserProfile>;
 
     return {
-      fullName: user.fullName ?? "",
+      fullName: user.email?.toLowerCase() === DEFAULT_ADMIN.email && user.role === "Administrator"
+        ? "Administrator"
+        : user.fullName ?? "",
       username: user.username ?? "",
       email: user.email ?? "",
       role: user.role ?? "",

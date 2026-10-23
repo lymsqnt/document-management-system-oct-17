@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { getCurrentUser } from "@/lib/shared/storage/accounts";
 import {
   LayoutDashboard,
@@ -93,10 +93,32 @@ const navigationGroups: NavigationGroup[] = [
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const [role, setRole] = useState("");
 
   useEffect(() => {
-    if (getCurrentUser()?.role === "Administrator") router.replace("/admin");
+    const currentRole = getCurrentUser()?.role ?? "";
+    setRole(currentRole);
+    if (currentRole === "Administrator") router.replace("/admin");
   }, [router]);
+
+  const isRequestEncoder = role === "Document Request Encoder" || role === "Document Request Officer" || role === "Staff";
+  const isEncoder = role === "Student Records Encoder" || role === "Registrar";
+  const visibleGroups = navigationGroups.map((group) => ({
+    ...group,
+    items: group.items.filter((item) => {
+      if (item.href === "/documents" || item.href === "/student-list") return isEncoder;
+      if (item.href === "/request") return isRequestEncoder;
+      if (["/report", "/users", "/audit-logs"].includes(item.href)) return false;
+      return true;
+    }),
+  })).filter((group) => group.items.length > 0);
+
+  useEffect(() => {
+    if (!role || role === "Administrator") return;
+    if (isRequestEncoder && ["/documents", "/student-list", "/student-profile-information", "/report", "/users", "/audit-logs"].some((path) => pathname === path || pathname.startsWith(`${path}/`))) router.replace("/dashboard");
+    if (isEncoder && ["/request", "/report", "/users", "/audit-logs"].some((path) => pathname === path || pathname.startsWith(`${path}/`))) router.replace("/dashboard");
+    if (role && !isRequestEncoder && !isEncoder) router.replace("/dashboard");
+  }, [isEncoder, isRequestEncoder, pathname, role, router]);
 
   const isActive = (href: string) => {
     return pathname === href || pathname.startsWith(`${href}/`);
@@ -167,7 +189,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           className="flex-1 overflow-y-auto px-3 py-5"
         >
           <div className="space-y-6">
-            {navigationGroups.map((group) => (
+            {visibleGroups.map((group) => (
               <div key={group.label}>
                 {/* Group Label */}
                 <div className="mb-2 px-3">

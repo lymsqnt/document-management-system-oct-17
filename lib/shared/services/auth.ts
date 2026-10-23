@@ -11,7 +11,9 @@ import {
   type CreateAccountData,
 } from "@/lib/shared/validations/create-account";
 import { validateNewPassword } from "@/lib/users/validations/profile";
-import { getRoles } from "@/lib/shared/storage/roles";
+import { REGISTRATION_OFFICES } from "@/lib/shared/constants/account";
+import { ACCOUNT_EMAIL_PATTERN } from "@/lib/shared/validations/patterns";
+import { validateStrongPassword } from "@/lib/shared/validations/password";
 
 type ActionResult = { success: true } | { success: false; message: string };
 
@@ -22,13 +24,21 @@ function toSafeUser(account: DemoAccount): SafeUser {
 
 /** Saves a new account. Run validateCreateAccount on the form first. */
 export function createAccount(form: CreateAccountData): ActionResult {
-  if (form.role === "Administrator" || !getRoles().includes(form.role)) {
-    return { success: false, message: "Select an available non-administrator role." };
+  if (!(REGISTRATION_OFFICES as readonly string[]).includes(form.department)) {
+    return { success: false, message: "Select an available office." };
   }
 
-  const accounts = getAccounts();
   const email = form.email.trim().toLowerCase();
   const username = form.username.trim();
+
+  if (!ACCOUNT_EMAIL_PATTERN.test(email)) {
+    return { success: false, message: "Only @gmail.com email addresses are accepted." };
+  }
+
+  const passwordError = validateStrongPassword(form.password);
+  if (passwordError) return { success: false, message: passwordError };
+
+  const accounts = getAccounts();
 
   if (accounts.some((account) => account.email.toLowerCase() === email)) {
     return {
@@ -51,7 +61,7 @@ export function createAccount(form: CreateAccountData): ActionResult {
       fullName: form.fullName.trim(),
       username,
       email,
-      role: form.role,
+      role: "",
       department: form.department,
       password: form.password,
       status: "pending",
@@ -136,6 +146,10 @@ export function updateProfile(
   const newUsername = profile.username.trim();
   const newEmail = profile.email.trim().toLowerCase();
 
+  if (!ACCOUNT_EMAIL_PATTERN.test(newEmail)) {
+    return { success: false, message: "Only @gmail.com email addresses are accepted." };
+  }
+
   // Full name, username and email must not belong to ANOTHER account.
   const others = accounts.filter((_, index) => index !== accountIndex);
 
@@ -184,6 +198,8 @@ export function updatePassword(
   email: string,
   newPassword: string
 ): boolean {
+  if (validateNewPassword(newPassword)) return false;
+
   const accounts = getAccounts();
 
   const accountIndex = accounts.findIndex(
@@ -255,6 +271,9 @@ export function resetPasswordByEmail(
   email: string,
   newPassword: string
 ): ActionResult {
+  const passwordError = validateNewPassword(newPassword);
+  if (passwordError) return { success: false, message: passwordError };
+
   const normalizedEmail = email.trim().toLowerCase();
   const accounts = getAccounts();
 

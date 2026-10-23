@@ -22,7 +22,6 @@ export type FilterState = {
     course: string;
     major: string;
     yearLevel: string;
-    enrollmentStatus: string;
     progress: ProgressFilter;
     search: string;
 };
@@ -267,38 +266,6 @@ export default function StudentFilters({
                                             </option>
                                         ),
                                     )}
-                                </select>
-
-                                {renderArrow()}
-                            </div>
-                        </div>
-
-                        {/* ENROLLMENT STATUS */}
-                        <div className="space-y-1.5">
-                            <label
-                                htmlFor="filter-enrollment"
-                                className="block text-xs font-medium text-slate-700"
-                            >
-                                Enrollment Status
-                            </label>
-
-                            <div className="relative">
-                                <select
-                                    id="filter-enrollment"
-                                    value={draftFilters.enrollmentStatus}
-                                    onChange={(event) =>
-                                        updateFilter(
-                                            "enrollmentStatus",
-                                            event.target.value,
-                                        )
-                                    }
-                                    className={selectClass}
-                                    disabled={!isOpen}
-                                >
-                                    <option value={ALL}>All Statuses</option>
-                                    <option value="Enrolled">Enrolled</option>
-                                    <option value="Graduated">Graduated</option>
-                                    <option value="Transferred">Transferred</option>
                                 </select>
 
                                 {renderArrow()}

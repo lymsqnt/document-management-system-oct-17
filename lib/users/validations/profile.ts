@@ -1,10 +1,11 @@
 import type { UserProfile } from "@/lib/shared/types/account";
 import {
-  EMAIL_PATTERN,
+  ACCOUNT_EMAIL_PATTERN,
   FULL_NAME_PATTERN,
   USERNAME_PATTERN,
 } from "@/lib/shared/validations/patterns";
 import { isAtLeast18 } from "@/lib/users/validations/profile-completion";
+import { validateStrongPassword } from "@/lib/shared/validations/password";
 
 /**
  * Checks the profile form. Returns an error message, or null if valid.
@@ -28,8 +29,8 @@ export function validateProfile(
     return "Please fill in all required fields.";
   }
 
-  if (!EMAIL_PATTERN.test(profile.email.trim())) {
-    return "Please enter a valid email address.";
+  if (!ACCOUNT_EMAIL_PATTERN.test(profile.email.trim())) {
+    return "Only @gmail.com email addresses are accepted.";
   }
 
   if (!FULL_NAME_PATTERN.test(profile.fullName.trim())) {
@@ -62,9 +63,5 @@ export function validateProfile(
 }
 
 export function validateNewPassword(password: string): string | null {
-  if (password.length < 8) {
-    return "Password must be at least 8 characters.";
-  }
-
-  return null;
+  return validateStrongPassword(password);
 }

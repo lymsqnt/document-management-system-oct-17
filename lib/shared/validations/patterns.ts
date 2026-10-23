@@ -5,9 +5,8 @@ export const USERNAME_PATTERN = /^[a-zA-Z0-9._@-]+$/;
 /** Letters (incl. accents/ñ), spaces, periods, apostrophes and hyphens only. No numbers. */
 export const FULL_NAME_PATTERN = /^[A-Z][a-zA-Z -]*$/;
 
-/** Stricter email check, used when creating an account. */
-export const ACCOUNT_EMAIL_PATTERN =
-  /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+/** Gmail-only email check for account registration, profiles, and recovery. */
+export const ACCOUNT_EMAIL_PATTERN = /^[A-Za-z0-9._%+-]+@gmail\.com$/i;
 
 /** Basic email check, used for students, profile and account recovery. */
 export const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

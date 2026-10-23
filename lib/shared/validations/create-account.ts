@@ -3,12 +3,13 @@ import {
   FULL_NAME_PATTERN,
   USERNAME_PATTERN,
 } from "@/lib/shared/validations/patterns";
+import { REGISTRATION_OFFICES } from "@/lib/shared/constants/account";
+import { validateStrongPassword } from "@/lib/shared/validations/password";
 
 export type CreateAccountData = {
   fullName: string;
   username: string;
   email: string;
-  role: string;
   department: string;
   password: string;
   confirmPassword: string;
@@ -19,9 +20,8 @@ export type CreateAccountErrors = Partial<
   Record<keyof CreateAccountData, string>
 >;
 
-/* ------------------------------------------------------------------ */
 /* Helpers for the duplicate full-name check                           */
-/* ------------------------------------------------------------------ */
+
 
 /** Trim, collapse repeated spaces, ignore letter case. */
 export function normalizeName(value: string): string {
@@ -46,8 +46,7 @@ function isFullNameTaken(
 
 export function validateCreateAccount(
   data: CreateAccountData,
-  existingAccounts: { fullName?: string }[],
-  availableRoles: string[] = []
+  existingAccounts: { fullName?: string }[]
 ): CreateAccountErrors {
   const errors: CreateAccountErrors = {};
 
@@ -85,27 +84,21 @@ export function validateCreateAccount(
     errors.email = "Please enter a valid email address.";
   }
 
-  if (!data.role) {
-    errors.role = "Please select a role / position.";
-  } else if (data.role === "Administrator") {
-    errors.role = "Administrator access cannot be requested through registration.";
-  } else if (!availableRoles.includes(data.role)) {
-    errors.role = "Please select an available role / position.";
-  }
-
-
   /* Department */
 
   if (!data.department) {
     errors.department = "Please select a department.";
+  } else if (!(REGISTRATION_OFFICES as readonly string[]).includes(data.department)) {
+    errors.department = "Please select an available office.";
   }
 
   /* Password */
 
   if (!data.password) {
     errors.password = "Password is required.";
-  } else if (data.password.length < 8) {
-    errors.password = "Password must be at least 8 characters.";
+  } else {
+    const passwordError = validateStrongPassword(data.password);
+    if (passwordError) errors.password = passwordError;
   }
 
   /* Confirm Password */

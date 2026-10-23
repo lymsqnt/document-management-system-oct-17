@@ -17,6 +17,7 @@ const groups: Group[] = [
     { label: "Document Request Approval", href: "/admin/requests", icon: ClipboardList },
   ] },
   { label: "Management", items: [
+    { label: "Student List", href: "/admin/students", icon: Users },
     { label: "Users", href: "/admin/users", icon: Users },
     { label: "Reports", href: "/admin/reports", icon: BarChart3 },
   ] },

@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 
 import Sidebar from "@/components/users/layout/sidebar";
+import { AdminSidebar } from "@/components/admin/layout";
 import Topbar from "@/components/shared/layout/topbar";
 
 import { COURSE_LABELS, DOCUMENT_TYPES } from "@/lib/users/constants/student";
@@ -39,7 +40,7 @@ import {
   validateStudentPhoto,
 } from "@/lib/shared/validations/files";
 
-export default function StudentProfileInformation() {
+export default function StudentProfileInformation({ adminMode = false }: { adminMode?: boolean }) {
   const searchParams = useSearchParams();
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -390,10 +391,9 @@ export default function StudentProfileInformation() {
   if (loading) {
     return (
       <div className="min-h-screen w-full overflow-x-hidden bg-[#f4f6fb]">
-        <Sidebar
-          isOpen={sidebarOpen}
-          onClose={() => setSidebarOpen(false)}
-        />
+        {adminMode
+          ? <AdminSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+          : <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />}
 
         <main
           className={`min-h-screen w-full transition-[margin,width] duration-300 ease-in-out ${
@@ -427,10 +427,9 @@ export default function StudentProfileInformation() {
   if (!student) {
     return (
       <div className="min-h-screen w-full overflow-x-hidden bg-[#f4f6fb]">
-        <Sidebar
-          isOpen={sidebarOpen}
-          onClose={() => setSidebarOpen(false)}
-        />
+        {adminMode
+          ? <AdminSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+          : <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />}
 
         <main
           className={`min-h-screen w-full transition-[margin,width] duration-300 ease-in-out ${
@@ -474,10 +473,9 @@ export default function StudentProfileInformation() {
   return (
     <div className="min-h-screen w-full overflow-x-hidden bg-[#f4f6fb]">
       {/* SIDEBAR */}
-      <Sidebar
-        isOpen={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-      />
+      {adminMode
+        ? <AdminSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+        : <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />}
 
       {/* MAIN AREA */}
       <main

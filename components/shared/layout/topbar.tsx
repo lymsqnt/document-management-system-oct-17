@@ -1,8 +1,10 @@
 "use client";
 
-import { Bell, Menu, UserRound } from "lucide-react";
-import { useEffect, useState } from "react";
+import { ChevronDown, LogOut, Menu, UserRoundPen } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { getCurrentUser } from "@/lib/shared/storage/accounts";
+import { logout } from "@/lib/shared/services/auth";
 import type { UserProfile } from "@/lib/shared/types/account";
 
 type TopbarProps = {
@@ -14,12 +16,43 @@ export default function Topbar({
   title,
   onToggleSidebar,
 }: TopbarProps) {
+  const router = useRouter();
+  const profileMenuRef = useRef<HTMLDivElement>(null);
   const [currentUser, setCurrentUser] =
     useState<UserProfile | null>(null);
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
 
   useEffect(() => {
     setCurrentUser(getCurrentUser());
   }, []);
+
+  useEffect(() => {
+    if (!profileMenuOpen) return;
+
+    const closeOnOutsideClick = (event: PointerEvent) => {
+      if (!profileMenuRef.current?.contains(event.target as Node)) {
+        setProfileMenuOpen(false);
+      }
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setProfileMenuOpen(false);
+    };
+
+    document.addEventListener("pointerdown", closeOnOutsideClick);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutsideClick);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [profileMenuOpen]);
+
+  const handleLogout = () => {
+    logout();
+    setCurrentUser(null);
+    setProfileMenuOpen(false);
+    router.replace("/login");
+    router.refresh();
+  };
 
   const initials =
     currentUser?.fullName
@@ -49,58 +82,71 @@ export default function Topbar({
       </div>
 
       {/* RIGHT */}
-      <div className="flex items-center gap-3 sm:gap-4">
-        {/* NOTIFICATION */}
-        <button
-          type="button"
-          aria-label="Notifications"
-          className="relative flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-slate-700 transition-colors duration-200 hover:bg-slate-50"
-        >
-          <Bell size={19} strokeWidth={1.8} />
+      <div className="flex items-center">
+        <div ref={profileMenuRef} className="relative">
+          <button
+            type="button"
+            aria-label="Open account actions"
+            aria-haspopup="menu"
+            aria-expanded={profileMenuOpen}
+            onClick={() => setProfileMenuOpen((open) => !open)}
+            className="flex items-center gap-2.5 rounded-lg px-1.5 py-1 transition-colors hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-200 sm:px-2"
+          >
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-blue-600 text-xs font-semibold text-white">
+              {currentUser?.profileImage ? (
+                <img
+                  src={currentUser.profileImage}
+                  alt={currentUser.fullName || "User"}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                initials
+              )}
+            </span>
 
-          <span className="absolute right-1 top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white">
-            3
-          </span>
-        </button>
+            <span className="hidden min-w-0 text-left sm:block">
+              <span className="block max-w-[150px] truncate text-xs font-semibold text-[#102F68]">
+                {currentUser?.fullName || "User"}
+              </span>
+              <span className="block text-[10px] text-slate-500">
+                {currentUser?.role || "Administrator"}
+              </span>
+            </span>
+            <ChevronDown size={14} className={`shrink-0 text-slate-500 transition-transform ${profileMenuOpen ? "rotate-180" : ""}`} />
+          </button>
 
-        {/* USER */}
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-blue-600 text-xs font-semibold text-white">
-            {currentUser?.profileImage ? (
-              <img
-                src={currentUser.profileImage}
-                alt={currentUser.fullName || "User"}
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              initials
-            )}
-          </div>
-
-          <div className="hidden min-w-0 sm:block">
-            <p className="max-w-[150px] truncate text-xs font-semibold text-[#102F68]">
-              {currentUser?.fullName || "User"}
-            </p>
-
-            <p className="text-[10px] text-slate-500">
-              {currentUser?.role || "Administrator"}
-            </p>
-          </div>
-
-          <span className="hidden text-slate-500 sm:block">
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="m6 9 6 6 6-6" />
-            </svg>
-          </span>
+          {profileMenuOpen && (
+            <div role="menu" className="absolute right-0 top-full z-50 mt-2 w-60 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg">
+              <div className="border-b border-slate-100 px-4 py-3">
+                <p className="truncate text-sm font-semibold text-slate-800">{currentUser?.fullName || "User"}</p>
+                <p className="truncate text-xs text-slate-500">{currentUser?.email || ""}</p>
+                <p className="mt-1 text-[11px] text-blue-700">{currentUser?.role || "Administrator"}</p>
+              </div>
+              {currentUser?.role !== "Administrator" && (
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setProfileMenuOpen(false);
+                    router.push("/profile");
+                  }}
+                  className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-slate-700 hover:bg-blue-50"
+                >
+                  <UserRoundPen size={16} className="text-slate-500" />
+                  My Profile
+                </button>
+              )}
+              <button
+                type="button"
+                role="menuitem"
+                onClick={handleLogout}
+                className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm font-medium text-red-600 hover:bg-red-50"
+              >
+                <LogOut size={16} />
+                Log Out
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </header>

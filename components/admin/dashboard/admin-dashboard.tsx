@@ -8,7 +8,7 @@ import { AdminSidebar } from "@/components/admin/layout";
 import Topbar from "@/components/shared/layout/topbar";
 import { getAccounts } from "@/lib/shared/storage/accounts";
 import { getAuditLogs } from "@/lib/shared/storage/audit-logs";
-import { getRoles } from "@/lib/shared/storage/roles";
+import { OPERATIONAL_ROLES } from "@/lib/shared/constants/account";
 import StudentDistribution from "@/components/users/dashboard/student-distribution";
 import ActivityChart from "@/components/users/dashboard/activitychart";
 import RecentStudents from "@/components/users/dashboard/recent-students";
@@ -17,8 +17,14 @@ import { getStudentDocuments, STUDENT_DOCUMENTS_UPDATED_EVENT } from "@/lib/user
 import type { StudentDocument } from "@/lib/users/types/student";
 
 type RecentStudent = {
-  studentId: string; studentName: string; course: string; major: string;
-  yearLevel: string; email: string; dateSubmitted: string; encodedAt: string;
+  studentId: string;
+  studentName: string;
+  course: string;
+  major: string;
+  yearLevel: string;
+  email: string;
+  dateSubmitted: string;
+  encodedAt: string;
   profileImage?: string;
 };
 
@@ -48,7 +54,7 @@ export default function AdminDashboard() {
         pending: accounts.filter((account) => account.status === "pending").length,
         pendingStudents: pendingStudentIds.size,
         users: accounts.filter((account) => account.role !== "Administrator").length,
-        roles: getRoles().filter((role) => role !== "Administrator").length,
+        roles: OPERATIONAL_ROLES.length,
         auditLogs: getAuditLogs().length,
       });
 
@@ -148,7 +154,11 @@ export default function AdminDashboard() {
               <ActivityChart data={activityData} />
             </div>
             <div className="min-w-0">
-              <RecentStudents students={recentStudents.slice(0, 8)} onViewAll={() => router.push("/admin/reports")} />
+              <RecentStudents
+                students={recentStudents.slice(0, 8)}
+                onViewStudent={(studentId) => router.push(`/admin/students/profile?id=${encodeURIComponent(studentId)}`)}
+                onViewAll={() => router.push("/admin/students")}
+              />
             </div>
           </section>
           <Link href="/admin/reports" className="flex items-center gap-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-blue-300 hover:shadow-md"><span className="rounded-xl bg-blue-50 p-3 text-blue-700"><BarChart3 size={22} /></span><span><span className="block font-semibold text-slate-800">View reports</span><span className="mt-1 block text-sm text-slate-500">Review document compliance and submission summaries.</span></span></Link>

@@ -1,3 +1,5 @@
+import { validateStrongPassword } from "@/lib/shared/validations/password";
+
 export type ResetPasswordData = {
   password: string;
   confirmPassword: string;
@@ -10,8 +12,9 @@ export function validateResetPassword(data: ResetPasswordData): ResetPasswordErr
 
   if (!data.password) {
     errors.password = "Password is required.";
-  } else if (data.password.length < 8) {
-    errors.password = "Password must be at least 8 characters.";
+  } else {
+    const passwordError = validateStrongPassword(data.password);
+    if (passwordError) errors.password = passwordError;
   }
 
   if (!data.confirmPassword) {

@@ -52,10 +52,10 @@ export default function AuditLogs({ adminMode = false }: { adminMode?: boolean }
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [isReady, setIsReady] = useState(false);
   const [logs, setLogs] = useState<AuditLog[]>([]);
-  const [accountNames, setAccountNames] = useState<string[]>([]);
+  const [accountRoles, setAccountRoles] = useState<string[]>([]);
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
-  const [userFilter, setUserFilter] = useState("All Users");
+  const [roleFilter, setRoleFilter] = useState("All Roles");
   const [actionFilter, setActionFilter] = useState("All Actions");
   const [resourceFilter, setResourceFilter] = useState("All Resources");
   const [search, setSearch] = useState("");
@@ -70,7 +70,7 @@ export default function AuditLogs({ adminMode = false }: { adminMode?: boolean }
       setCurrentUser(user);
       setIsReady(true);
       setLogs(getAuditLogs());
-      setAccountNames(getAccounts().map((account) => account.fullName.trim()).filter(Boolean));
+      setAccountRoles(getAccounts().map((account) => account.role.trim()).filter(Boolean));
     };
     const updateSidebar = () => setSidebarOpen(window.innerWidth >= 1024);
     refresh();
@@ -91,18 +91,18 @@ export default function AuditLogs({ adminMode = false }: { adminMode?: boolean }
     else if (currentUser.role !== "Administrator") router.replace("/dashboard");
   }, [currentUser, isReady, router]);
 
-  const users = useMemo(() => [...new Set([...accountNames, ...logs.map((log) => log.user)])].sort(), [accountNames, logs]);
+  const roles = useMemo(() => [...new Set([...accountRoles, ...logs.map((log) => log.role)])].sort(), [accountRoles, logs]);
   const actions = useMemo(() => [...new Set(logs.map((log) => log.action))].sort(), [logs]);
   const resources = useMemo(() => [...new Set(logs.map((log) => log.resourceType))].sort(), [logs]);
   const filteredLogs = useMemo(() => logs.filter((log) => {
     const date = log.timestamp.slice(0, 10);
     const query = search.trim().toLowerCase();
     return (!fromDate || date >= fromDate) && (!toDate || date <= toDate) &&
-      (userFilter === "All Users" || log.user === userFilter) &&
+      (roleFilter === "All Roles" || log.role === roleFilter) &&
       (actionFilter === "All Actions" || log.action === actionFilter) &&
       (resourceFilter === "All Resources" || log.resourceType === resourceFilter) &&
       (!query || `${log.user} ${log.email} ${log.role} ${log.action} ${log.resource} ${log.details}`.toLowerCase().includes(query));
-  }), [logs, fromDate, toDate, userFilter, actionFilter, resourceFilter, search]);
+  }), [logs, fromDate, toDate, roleFilter, actionFilter, resourceFilter, search]);
   const pageCount = Math.max(1, Math.ceil(filteredLogs.length / pageSize));
   const visibleLogs = filteredLogs.slice((page - 1) * pageSize, page * pageSize);
   const displayName = currentUser?.fullName?.trim() || "Signed out";
@@ -129,7 +129,7 @@ export default function AuditLogs({ adminMode = false }: { adminMode?: boolean }
     setPage(1);
   };
   const clearFilters = () => {
-    setFromDate(""); setToDate(""); setUserFilter("All Users");
+    setFromDate(""); setToDate(""); setRoleFilter("All Roles");
     setActionFilter("All Actions"); setResourceFilter("All Resources");
     setSearch(""); setDateError(""); setPage(1);
   };
@@ -173,10 +173,10 @@ export default function AuditLogs({ adminMode = false }: { adminMode?: boolean }
                     </div>
               </label>
               <label className="block">
-                    <span className="mb-1 block text-[11px] font-semibold text-[#183b81]">User</span>
-                    <div className="flex min-h-10 items-center gap-2 rounded-lg border border-blue-200 px-2"><UserRound size={15} className="shrink-0 text-blue-700" />
-                        <select aria-label="Filter by user" value={userFilter} onChange={(event) => { setUserFilter(event.target.value); setPage(1); }} className="w-full bg-transparent text-xs outline-none">
-                            <option>All Users</option>{users.map((user) => <option key={user}>{user}</option>)}
+                    <span className="mb-1 block text-[11px] font-semibold text-[#183b81]">Role</span>
+                    <div className="flex min-h-10 items-center gap-2 rounded-lg border border-blue-200 px-2"><ShieldCheck size={15} className="shrink-0 text-blue-700" />
+                        <select aria-label="Filter by role" value={roleFilter} onChange={(event) => { setRoleFilter(event.target.value); setPage(1); }} className="w-full bg-transparent text-xs outline-none">
+                            <option>All Roles</option>{roles.map((role) => <option key={role}>{role}</option>)}
                         </select>
                         
                     </div>

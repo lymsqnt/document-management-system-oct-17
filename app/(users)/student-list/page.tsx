@@ -1,4 +1,4 @@
-import StudentList from "@/components/users/documents/student-list";
+import StudentList from "@/components/shared/students/student-list";
 
 export default function StudentListPage() {
   return <StudentList />;

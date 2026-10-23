@@ -32,6 +32,10 @@ export function getAuditLogs(): AuditLog[] {
       !Number.isNaN(Date.parse((entry as AuditLog).timestamp)) &&
       typeof (entry as AuditLog).resource === "string" &&
       typeof (entry as AuditLog).details === "string"
+    ).map((log) =>
+      log.email.toLowerCase() === "admin@qeci.edu.ph" && log.role === "Administrator"
+        ? { ...log, user: "Administrator" }
+        : log
     );
   } catch {
     return [];

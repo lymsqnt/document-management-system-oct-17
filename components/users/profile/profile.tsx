@@ -29,7 +29,7 @@ import Sidebar from "@/components/users/layout/sidebar";
 import Topbar from "@/components/shared/layout/topbar";
 import ProfileInput from "@/components/shared/ui/profileinput";
 import ProfileSelect from "@/components/shared/ui/profileselect";
-import { DEPARTMENTS, GENDERS } from "@/lib/shared/constants/account";
+import { REGISTRATION_OFFICES, GENDERS } from "@/lib/shared/constants/account";
 import {
   updateProfile,
   updatePassword,
@@ -493,7 +493,7 @@ export default function Profile() {
                       value={profile.department}
                       icon={Building2}
                       editing={editing}
-                      options={DEPARTMENTS}
+                      options={[...REGISTRATION_OFFICES]}
                       onChange={(value) =>
                         updateField("department", value)
                       }

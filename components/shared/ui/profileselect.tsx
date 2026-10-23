@@ -40,6 +40,12 @@ export default function ProfileSelect({
         >
           <option value="">{placeholder}</option>
 
+          {value && !options.includes(value) && (
+            <option value={value} disabled>
+              {value} (unavailable)
+            </option>
+          )}
+
           {options.map((option) => (
             <option key={option} value={option}>
               {option}

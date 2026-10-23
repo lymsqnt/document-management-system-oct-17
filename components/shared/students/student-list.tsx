@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 
 import Sidebar from "@/components/users/layout/sidebar";
+import { AdminSidebar } from "@/components/admin/layout";
 import Topbar from "@/components/shared/layout/topbar";
 import WelcomeBanner from "@/components/shared/layout/welcome-banner";
 import {
@@ -41,7 +42,7 @@ import {
 import type { StudentSummary as Student } from "@/lib/users/types/student";
 import StudentFilters, {
   type FilterState,
-} from "@/components/users/documents/student-filters";
+} from "@/components/shared/students/student-filters";
 
 const ALL = "All";
 
@@ -50,12 +51,11 @@ const EMPTY_FILTERS: FilterState = {
   course: ALL,
   major: ALL,
   yearLevel: ALL,
-  enrollmentStatus: ALL,
   progress: "All Progress",
   search: "",
 };
 
-export default function StudentList() {
+export default function StudentList({ adminMode = false }: { adminMode?: boolean }) {
   const router = useRouter();
   const filterContainerRef = useRef<HTMLDivElement>(null);
 
@@ -289,11 +289,6 @@ export default function StudentList() {
         appliedFilters.yearLevel === ALL ||
         student.yearLevel === appliedFilters.yearLevel;
 
-      const matchesEnrollment =
-        appliedFilters.enrollmentStatus === ALL ||
-        student.enrollmentStatus ===
-        appliedFilters.enrollmentStatus;
-
       const matchesProgress =
         appliedFilters.progress === "All Progress" ||
         student.progress === appliedFilters.progress;
@@ -304,7 +299,6 @@ export default function StudentList() {
         matchesCourse &&
         matchesMajor &&
         matchesYear &&
-        matchesEnrollment &&
         matchesProgress
       );
     });
@@ -371,7 +365,6 @@ export default function StudentList() {
     appliedFilters.course !== ALL,
     appliedFilters.major !== ALL,
     appliedFilters.yearLevel !== ALL,
-    appliedFilters.enrollmentStatus !== ALL,
     appliedFilters.progress !== "All Progress",
     Boolean(appliedFilters.search.trim()),
   ].filter(Boolean).length;
@@ -401,19 +394,17 @@ export default function StudentList() {
 
   // OPEN STUDENT PROFILE
   const openStudentProfile = (studentId: string) => {
-    router.push(
-      `/student-profile-information?id=${encodeURIComponent(
-        studentId,
-      )}`,
-    );
+    const profilePath = adminMode
+      ? "/admin/students/profile"
+      : "/student-profile-information";
+    router.push(`${profilePath}?id=${encodeURIComponent(studentId)}`);
   };
 
   return (
     <div className="min-h-screen w-full overflow-x-hidden bg-[#f1f3fc] text-slate-800">
-      <Sidebar
-        isOpen={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-      />
+      {adminMode
+        ? <AdminSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+        : <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />}
 
       <main
         className={`min-h-screen w-full transition-[margin,width] duration-300 ${sidebarOpen

@@ -1,20 +1,18 @@
 "use client";
 
-import { DEPARTMENTS } from "@/lib/shared/constants/account";
-import { useEffect, useState, type FormEvent } from "react";
+import { REGISTRATION_OFFICES } from "@/lib/shared/constants/account";
+import { useState, type FormEvent } from "react";
 import Link from "next/link";
-import { UserRoundPlus, UserRound, AtSign,Mail, BriefcaseBusiness, LockKeyhole, Building2, Eye, EyeOff, } from "lucide-react";
+import { UserRoundPlus, UserRound, AtSign,Mail, LockKeyhole, Building2, Eye, EyeOff, } from "lucide-react";
 
 import { createAccount } from "@/lib/shared/services/auth";
 import { getAccounts } from "@/lib/shared/storage/accounts";
-import { getRoles } from "@/lib/shared/storage/roles";
 import { validateCreateAccount, type CreateAccountData, type CreateAccountErrors,} from "@/lib/shared/validations/create-account";
 
 const initialForm: CreateAccountData = {
   fullName: "",
   username: "",
   email: "",
-  role: "",
   department: "",
   password: "",
   confirmPassword: "",
@@ -33,18 +31,6 @@ export default function CreateAccount() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [roles, setRoles] = useState<string[]>([]);
-
-  useEffect(() => {
-    const refreshRoles = () => setRoles(getRoles().filter((role) => role !== "Administrator"));
-    refreshRoles();
-    window.addEventListener("storage", refreshRoles);
-    window.addEventListener("focus", refreshRoles);
-    return () => {
-      window.removeEventListener("storage", refreshRoles);
-      window.removeEventListener("focus", refreshRoles);
-    };
-  }, []);
 
   const updateField = <K extends keyof CreateAccountData>(
     field: K,
@@ -66,7 +52,7 @@ export default function CreateAccount() {
     setFormError("");
     setFormSuccess("");
 
-    const validationErrors = validateCreateAccount(form, getAccounts(), roles);
+    const validationErrors = validateCreateAccount(form, getAccounts());
     setErrors(validationErrors);
 
     if (Object.keys(validationErrors).length > 0) {
@@ -189,7 +175,7 @@ export default function CreateAccount() {
                       id="email"
                       type="email"
                       autoComplete="email"
-                      placeholder="Enter your email address"
+                      placeholder="name@gmail.com"
                       value={form.email}
                       onChange={(e) => updateField("email", e.target.value)}
                       className={inputClass}
@@ -199,19 +185,11 @@ export default function CreateAccount() {
                   {errors.email && (
                     <p className="mt-1 text-xs text-red-600">{errors.email}</p>
                   )}
+                  {!errors.email && <p className="mt-1 text-[11px] text-gray-500">Use a Gmail address ending in @gmail.com.</p>}
                 </div>
 
-                <div className="min-w-0">
-                  <label htmlFor="role" className={labelClass}>Role / Position</label>
-                  <div className="relative">
-                    <BriefcaseBusiness size={16} className={iconClass} />
-                    <select id="role" value={form.role} onChange={(e) => updateField("role", e.target.value)} className={`${inputClass} appearance-none pr-9`} required>
-                      <option value="" disabled>Select your role / position</option>
-                      {roles.map((role) => <option key={role} value={role}>{role}</option>)}
-                    </select>
-                    <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-600">▾</span>
-                  </div>
-                  {errors.role && <p className="mt-1 text-xs text-red-600">{errors.role}</p>}
+                <div className="flex items-center rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-800 sm:text-sm">
+                  Your role will be assigned by an administrator after review.
                 </div>
               </div>
 
@@ -241,6 +219,7 @@ export default function CreateAccount() {
                       {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
                   </div>
+                  <p className="mt-1 text-[11px] text-gray-500">Use 8+ characters with uppercase, lowercase, a number, and a symbol.</p>
                   {errors.password && (
                     <p className="mt-1 text-xs text-red-600">{errors.password}</p>
                   )}
@@ -309,7 +288,7 @@ export default function CreateAccount() {
                     <option value="" disabled>
                       Select your department or office
                     </option>
-                    {DEPARTMENTS.map((department) => (
+                    {REGISTRATION_OFFICES.map((department) => (
                       <option key={department} value={department}>
                         {department}
                       </option>
