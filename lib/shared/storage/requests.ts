@@ -21,7 +21,7 @@ export function getDocumentRequests(): DocumentRequest[] {
         typeof request.studentId === "string" &&
         typeof request.studentName === "string" &&
         typeof request.documentType === "string" &&
-        ["Pending Admin Review", "Approved", "Rejected"].includes(
+        ["Pending Admin Review", "Approved", "Rejected", "Ready for Download"].includes(
           request.status ?? ""
         )
       );
@@ -56,6 +56,29 @@ export function reviewDocumentRequest(
     status,
     reviewedAt: new Date().toISOString(),
     reviewedBy,
+  };
+  localStorage.setItem(DOCUMENT_REQUESTS_KEY, JSON.stringify(requests));
+  window.dispatchEvent(new Event(DOCUMENT_REQUESTS_UPDATED_EVENT));
+  return true;
+}
+
+
+/** Makes an approved request's uploaded credential available to its requester. */
+export function releaseDocumentRequest(
+  id: string,
+  releasedBy: string,
+  releasedDocumentId: string,
+): boolean {
+  const requests = getDocumentRequests();
+  const requestIndex = requests.findIndex((request) => request.id === id);
+  if (requestIndex === -1 || requests[requestIndex].status !== "Approved") return false;
+
+  requests[requestIndex] = {
+    ...requests[requestIndex],
+    status: "Ready for Download",
+    releasedAt: new Date().toISOString(),
+    releasedBy,
+    releasedDocumentId,
   };
   localStorage.setItem(DOCUMENT_REQUESTS_KEY, JSON.stringify(requests));
   window.dispatchEvent(new Event(DOCUMENT_REQUESTS_UPDATED_EVENT));

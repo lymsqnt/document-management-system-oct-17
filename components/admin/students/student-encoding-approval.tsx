@@ -1,11 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Check, FileText, Search, UserRoundCheck, X } from "lucide-react";
+import { Check, Eye, FileText, Search, UserRoundCheck, X } from "lucide-react";
 import { AdminSidebar } from "@/components/admin/layout";
 import Topbar from "@/components/shared/layout/topbar";
 import { getCurrentUser } from "@/lib/shared/storage/accounts";
 import { logActivity } from "@/lib/shared/storage/audit-logs";
+import { notifyStudentEncodingReviewed } from "@/lib/shared/storage/notifications";
 import {
   getStudentDocuments,
   reviewStudentEncoding,
@@ -98,6 +99,18 @@ export default function StudentEncodingApproval() {
         resource: `${student?.studentName || "Student"} (${submission.studentId})`,
         details: `${reviewer} ${status} the student encoding with ${submission.documents.length} credential(s).`,
       });
+
+      const encoderEmails = new Set(
+        submission.documents
+          .filter((document) => document.approvalStatus === "pending" && document.encodedByEmail?.trim())
+          .map((document) => document.encodedByEmail!.trim().toLowerCase())
+      );
+      encoderEmails.forEach((email) => notifyStudentEncodingReviewed(email, {
+        status,
+        studentName: student?.studentName || submission.studentId,
+        studentId: submission.studentId,
+        reviewedBy: reviewer,
+      }));
     }
     refresh();
   }
@@ -169,7 +182,20 @@ export default function StudentEncodingApproval() {
                                   <p className="truncate text-xs font-medium text-slate-800">{document.documentType}</p>
                                   <p className="truncate text-[10px] text-slate-500">{document.fileName}</p>
                                 </div>
-                                {document.fileData && <a href={document.fileData} download={document.fileName} className="shrink-0 text-[10px] font-medium text-blue-700 hover:underline">Download</a>}
+                                {document.fileData && (
+                                  <div className="flex shrink-0 items-center gap-3">
+                                    <a
+                                      href={document.fileData}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      aria-label={`View ${document.documentType} for ${student?.studentName || submission.studentId}`}
+                                      className="inline-flex items-center gap-1 text-[10px] font-medium text-blue-700 hover:underline"
+                                    >
+                                      <Eye size={13} /> View
+                                    </a>
+                                    <a href={document.fileData} download={document.fileName} className="shrink-0 text-[10px] font-medium text-blue-700 hover:underline">Download</a>
+                                  </div>
+                                )}
                               </div>
                             ))}
                           </div>

@@ -11,6 +11,8 @@ import {
 import { useRouter } from "next/navigation";
 import {
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Eye,
   Search,
   SlidersHorizontal,
@@ -45,6 +47,7 @@ import StudentFilters, {
 } from "@/components/shared/students/student-filters";
 
 const ALL = "All";
+const PAGE_SIZE = 10;
 
 const EMPTY_FILTERS: FilterState = {
   college: ALL,
@@ -62,6 +65,7 @@ export default function StudentList({ adminMode = false }: { adminMode?: boolean
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [students, setStudents] = useState<Student[]>([]);
   const [search, setSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
   const [filterOpen, setFilterOpen] = useState(false);
 
   const [appliedFilters, setAppliedFilters] =
@@ -303,6 +307,22 @@ export default function StudentList({ adminMode = false }: { adminMode?: boolean
       );
     });
   }, [students, search, appliedFilters]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredStudents.length / PAGE_SIZE));
+  const paginatedStudents = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return filteredStudents.slice(start, start + PAGE_SIZE);
+  }, [filteredStudents, currentPage]);
+  const firstVisibleStudent = filteredStudents.length === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
+  const lastVisibleStudent = Math.min(currentPage * PAGE_SIZE, filteredStudents.length);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, appliedFilters, students.length]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) setCurrentPage(totalPages);
+  }, [currentPage, totalPages]);
 
   // DELETE STUDENT
   const handleDeleteStudent = (student: Student) => {
@@ -578,8 +598,8 @@ export default function StudentList({ adminMode = false }: { adminMode?: boolean
                 </thead>
 
                 <tbody>
-                  {filteredStudents.length > 0 ? (
-                    filteredStudents.map((student) => {
+                  {paginatedStudents.length > 0 ? (
+                    paginatedStudents.map((student) => {
                       const percentage = Math.min(
                         100,
                         Math.round(
@@ -694,8 +714,8 @@ export default function StudentList({ adminMode = false }: { adminMode?: boolean
 
             {/* MOBILE CARDS */}
             <div className="grid gap-3 px-4 pb-4 md:hidden">
-              {filteredStudents.length > 0 ? (
-                filteredStudents.map((student) => {
+              {paginatedStudents.length > 0 ? (
+                paginatedStudents.map((student) => {
                   const percentage = Math.min(
                     100,
                     Math.round(
@@ -834,18 +854,31 @@ export default function StudentList({ adminMode = false }: { adminMode?: boolean
             </div>
 
             {/* FOOTER COUNT */}
-            <div className="border-t border-slate-100 px-5 py-4 sm:px-6">
+            <div className="flex flex-col gap-3 border-t border-slate-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
               <p className="text-xs text-slate-500">
-                Showing{" "}
-                <span className="font-semibold text-slate-700">
-                  {filteredStudents.length}
-                </span>{" "}
-                of{" "}
-                <span className="font-semibold text-slate-700">
-                  {students.length}
-                </span>{" "}
-                students
+                Showing <span className="font-semibold text-slate-700">{firstVisibleStudent}–{lastVisibleStudent}</span> of <span className="font-semibold text-slate-700">{filteredStudents.length}</span> filtered students ({students.length} total)
               </p>
+              <nav aria-label="Student list pagination" className="flex items-center justify-end gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                  disabled={currentPage === 1}
+                  aria-label="Previous page"
+                  className="inline-flex h-9 items-center gap-1 rounded-lg border border-slate-200 px-3 text-xs font-medium text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <ChevronLeft size={15} /> <span className="hidden sm:inline">Previous</span>
+                </button>
+                <span aria-live="polite" className="min-w-16 px-2 text-center text-xs font-medium text-slate-600">Page {currentPage} of {totalPages}</span>
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+                  disabled={currentPage === totalPages}
+                  aria-label="Next page"
+                  className="inline-flex h-9 items-center gap-1 rounded-lg border border-slate-200 px-3 text-xs font-medium text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <span className="hidden sm:inline">Next</span> <ChevronRight size={15} />
+                </button>
+              </nav>
             </div>
           </section>
         </div>

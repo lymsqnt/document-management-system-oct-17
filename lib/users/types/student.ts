@@ -23,6 +23,8 @@ export type StudentDocument = {
   approvalStatus?: StudentApprovalStatus;
   approvalReviewedAt?: string;
   approvalReviewedBy?: string;
+  encodedBy?: string;
+  encodedByEmail?: string;
   email: string;
   remarks?: string;
   fileName: string;

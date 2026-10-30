@@ -9,7 +9,7 @@ const AUDIT_LOGS_KEY = "demoAuditLogs";
 const ACTIONS: AuditAction[] = [
   "Sign In", "Sign Out", "Account Created", "Profile Updated", "Password Changed",
   "Password Reset", "Document Uploaded", "Document Updated", "Student Deleted",
-  "Account Approved", "Account Rejected", "Role Created", "Role Updated", "Role Deleted",
+  "Account Approved", "Account Rejected", "Document Request Released", "Document Request Approved", "Document Request Rejected", "Document Viewed", "Document Downloaded", "Role Created", "Role Updated", "Role Deleted",
 ];
 const RESOURCE_TYPES: AuditResourceType[] = ["Account", "Profile", "Security", "Document", "Student", "Approval", "Role"];
 

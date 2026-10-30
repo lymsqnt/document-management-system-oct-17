@@ -197,7 +197,7 @@ export default function Profile() {
 
     setEditing(false);
     setSaved(true);
-    if (!isProfileComplete(savedProfile)) {
+    if (isProfileComplete(updatedProfile)) {
       router.replace("/dashboard");
     }
   };

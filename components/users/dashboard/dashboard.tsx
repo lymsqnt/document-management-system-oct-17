@@ -11,7 +11,6 @@ import WelcomeBanner from "@/components/shared/layout/welcome-banner";
 import StatCard from "@/components/users/dashboard/statcard";
 import StudentDistribution from "@/components/users/dashboard/student-distribution";
 import ActivityChart from "@/components/users/dashboard/activitychart";
-import QuickActions from "@/components/users/dashboard/quick-actions";
 import RecentStudents from "@/components/users/dashboard/recent-students";
 
 import { YEAR_LEVELS } from "@/lib/users/constants/student";
@@ -308,11 +307,7 @@ export default function Dashboard() {
             <div className="min-w-0 space-y-5">
               <StudentDistribution data={yearLevelData} />
               <ActivityChart data={activityData} />
-              <QuickActions
-                onEncodeStudent={() => router.push("/documents")}
-                onUploadDocument={() => router.push("/documents")}
-                onViewReports={() => router.push("/report")}
-              />
+
             </div>
 
             <div className="min-w-0">

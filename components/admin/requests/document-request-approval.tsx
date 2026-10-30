@@ -10,6 +10,7 @@ import {
   reviewDocumentRequest,
 } from "@/lib/shared/storage/requests";
 import { getCurrentUser } from "@/lib/shared/storage/accounts";
+import { logActivity } from "@/lib/shared/storage/audit-logs";
 import { COURSE_LABELS } from "@/lib/users/constants/student";
 import type { DocumentRequest } from "@/lib/shared/types/request";
 
@@ -60,6 +61,7 @@ export default function DocumentRequestApproval() {
         request.requestedBy,
         request.requestedByEmail,
         request.documentType,
+        request.reason,
         request.purpose,
       ].join(" ").toLowerCase().includes(normalizedQuery);
       return matchesFilter && matchesQuery;
@@ -73,6 +75,14 @@ export default function DocumentRequestApproval() {
       status,
       currentUser?.fullName || currentUser?.username || "Administrator"
     );
+    if (updated) {
+      logActivity({
+        action: status === "Approved" ? "Document Request Approved" : "Document Request Rejected",
+        resourceType: "Approval",
+        resource: `${request.documentType} · ${request.studentName} (${request.studentId})`,
+        details: `${status} the document request from ${request.requestedBy}. Reason: ${request.reason || request.purpose}`,
+      });
+    }
     setFeedback(updated
       ? `${request.studentName}'s document request was ${status.toLowerCase()}.`
       : "This request was already reviewed or is no longer available.");
@@ -136,7 +146,7 @@ export default function DocumentRequestApproval() {
                           <p><span className="text-slate-500">Submitted: </span>{formatDate(request.dateCreated)}</p>
                           <p><span className="text-slate-500">Requested by: </span>{request.requestedBy}{request.requestedByEmail ? ` · ${request.requestedByEmail}` : ""}</p>
                         </div>
-                        <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-600">{request.purpose}</p>
+                        <p className="mt-3 text-sm leading-6 text-slate-600"><span className="font-medium">Reason: </span>{request.reason || request.purpose}</p>{request.reason && request.purpose && <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-slate-500"><span className="font-medium">{request.reason === "Other" ? "Details: " : "Remarks: "}</span>{request.purpose}</p>}
                         {request.reviewedAt && <p className="mt-2 text-xs text-slate-400">Reviewed by {request.reviewedBy || "Administrator"} · {formatDate(request.reviewedAt)}</p>}
                       </div>
                       {request.status === "Pending Admin Review" && (

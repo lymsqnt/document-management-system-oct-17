@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { getCurrentUser } from "@/lib/shared/storage/accounts";
 import { logout } from "@/lib/shared/services/auth";
 import type { UserProfile } from "@/lib/shared/types/account";
+import ReviewNotificationBell from "@/components/shared/layout/review-notification-bell";
 
 type TopbarProps = {
   title: string;
@@ -83,6 +84,7 @@ export default function Topbar({
 
       {/* RIGHT */}
       <div className="flex items-center">
+        <ReviewNotificationBell />
         <div ref={profileMenuRef} className="relative">
           <button
             type="button"

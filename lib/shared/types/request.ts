@@ -7,11 +7,15 @@ export type DocumentRequest = {
   major?: string;
   yearLevel?: string;
   documentType: string;
+  reason?: string;
   purpose: string;
-  status: "Pending Admin Review" | "Approved" | "Rejected";
+  status: "Pending Admin Review" | "Approved" | "Rejected" | "Ready for Download";
   dateCreated: string;
   requestedBy: string;
   requestedByEmail?: string;
   reviewedAt?: string;
   reviewedBy?: string;
+  releasedAt?: string;
+  releasedBy?: string;
+  releasedDocumentId?: string;
 };

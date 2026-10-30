@@ -13,6 +13,11 @@ import {
 import {
   BookOpen,
   CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  CircleCheck,
+  CircleX,
+  Clock3,
   FileText,
   GraduationCap,
   Layers3,
@@ -31,15 +36,19 @@ import GroupedSelect from "@/components/shared/ui/grouped-select";
 import Select from "@/components/shared/ui/select";
 
 import {
+  COLLEGE_COURSES,
+  COURSE_LABELS,
   COURSE_MAJORS,
   DOCUMENT_TYPES,
   PROGRAMS_BY_COLLEGE,
   YEAR_LEVELS,
 } from "@/lib/users/constants/student";
 import { logActivity } from "@/lib/shared/storage/audit-logs";
+import { getCurrentUser } from "@/lib/shared/storage/accounts";
 import {
   addStudentDocuments,
   getStudentDocuments,
+  STUDENT_DOCUMENTS_UPDATED_EVENT,
 } from "@/lib/users/storage/student-documents";
 import type { StudentDocument } from "@/lib/users/types/student";
 import { validateDocumentFile } from "@/lib/shared/validations/files";
@@ -69,8 +78,13 @@ const createCredentialDraft = (): CredentialDraft => ({
   filePreview: "",
 });
 
+const ENCODED_STUDENTS_PER_PAGE = 4;
+
 export default function DocumentList() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [savedDocuments, setSavedDocuments] = useState<StudentDocument[]>([]);
+  const [encoderEmail, setEncoderEmail] = useState("");
+  const [encodedStudentsPage, setEncodedStudentsPage] = useState(1);
 
   const [studentId, setStudentId] = useState("");
   const [studentName, setStudentName] = useState("");
@@ -127,6 +141,51 @@ export default function DocumentList() {
       window.removeEventListener("resize", updateSidebar);
     };
   }, []);
+
+  useEffect(() => {
+    const user = getCurrentUser();
+    setEncoderEmail(user?.email.trim().toLowerCase() ?? "");
+
+    const refreshDocuments = () => setSavedDocuments(getStudentDocuments());
+    refreshDocuments();
+    window.addEventListener("storage", refreshDocuments);
+    window.addEventListener(STUDENT_DOCUMENTS_UPDATED_EVENT, refreshDocuments);
+    return () => {
+      window.removeEventListener("storage", refreshDocuments);
+      window.removeEventListener(STUDENT_DOCUMENTS_UPDATED_EVENT, refreshDocuments);
+    };
+  }, []);
+
+  const myEncodedDocuments = useMemo(() => savedDocuments
+    .filter((document) => document.encodedByEmail?.trim().toLowerCase() === encoderEmail)
+    .sort((a, b) => new Date(b.encodedAt || b.dateSubmitted).getTime() - new Date(a.encodedAt || a.dateSubmitted).getTime()),
+  [savedDocuments, encoderEmail]);
+  const myEncodedStudents = useMemo(() => {
+    const grouped = new Map<string, StudentDocument[]>();
+    myEncodedDocuments.forEach((document) => {
+      const id = document.studentId.trim().toUpperCase();
+      grouped.set(id, [...(grouped.get(id) ?? []), document]);
+    });
+    return Array.from(grouped, ([studentId, documents]) => ({ studentId, documents }));
+  }, [myEncodedDocuments]);
+  const encodedStudentsPageCount = Math.max(1, Math.ceil(myEncodedStudents.length / ENCODED_STUDENTS_PER_PAGE));
+  const visibleEncodedStudents = myEncodedStudents.slice(
+    (encodedStudentsPage - 1) * ENCODED_STUDENTS_PER_PAGE,
+    encodedStudentsPage * ENCODED_STUDENTS_PER_PAGE,
+  );
+  const firstEncodedStudent = myEncodedStudents.length === 0 ? 0 : (encodedStudentsPage - 1) * ENCODED_STUDENTS_PER_PAGE + 1;
+  const lastEncodedStudent = Math.min(encodedStudentsPage * ENCODED_STUDENTS_PER_PAGE, myEncodedStudents.length);
+
+  useEffect(() => {
+    setEncodedStudentsPage(1);
+  }, [encoderEmail]);
+
+  useEffect(() => {
+    if (encodedStudentsPage > encodedStudentsPageCount) setEncodedStudentsPage(encodedStudentsPageCount);
+  }, [encodedStudentsPage, encodedStudentsPageCount]);
+  const pendingReviewCount = myEncodedDocuments.filter((document) => document.approvalStatus === "pending").length;
+  const approvedCount = myEncodedDocuments.filter((document) => document.approvalStatus === "approved" || !document.approvalStatus).length;
+  const rejectedCount = myEncodedDocuments.filter((document) => document.approvalStatus === "rejected").length;
 
   const handleCredentialFile = (credentialId: string, file: File) => {
     setError("");
@@ -269,10 +328,14 @@ export default function DocumentList() {
       const normalizedStudentName = studentName.trim().replace(/\s+/g, " ");
       const normalizedStudentId = studentId.trim().toUpperCase();
       const encodedAt = new Date().toISOString();
+      const encoder = getCurrentUser();
+      const selectedCollege = Object.entries(COLLEGE_COURSES)
+        .find(([, courses]) => courses.includes(course))?.[0] ?? "";
       const newDocuments: StudentDocument[] = credentials.map((credential) => ({
         id: crypto.randomUUID(),
         studentId: normalizedStudentId,
         studentName: normalizedStudentName,
+        college: selectedCollege,
         course: course.trim(),
         major: major.trim(),
         yearLevel: yearLevel.trim(),
@@ -281,6 +344,8 @@ export default function DocumentList() {
         dateSubmitted,
         encodedAt,
         approvalStatus: "pending",
+        encodedBy: encoder?.fullName || encoder?.username || "",
+        encodedByEmail: encoder?.email?.trim().toLowerCase() || "",
         email: email.trim().toLowerCase(),
         remarks: remarks.trim(),
         fileName: credential.selectedFile!.name,
@@ -727,6 +792,115 @@ export default function DocumentList() {
                 </button>
               </div>
             </form>
+          </section>
+
+          <section className="overflow-hidden rounded-2xl bg-white shadow-sm" aria-labelledby="encoding-status-heading">
+            <div className="flex flex-col gap-3 border-b border-slate-100 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+              <div>
+                <h2 id="encoding-status-heading" className="text-sm font-semibold text-slate-800">My Encoded Student Records</h2>
+                <p className="mt-1 text-xs text-slate-500">Full student information and admin review status for every credential.</p>
+              </div>
+              <div className="flex flex-wrap gap-2 text-[10px] font-semibold">
+                <span className="rounded-full bg-amber-50 px-2.5 py-1 text-amber-700">Pending {pendingReviewCount}</span>
+                <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-emerald-700">Approved {approvedCount}</span>
+                <span className="rounded-full bg-rose-50 px-2.5 py-1 text-rose-700">Rejected {rejectedCount}</span>
+              </div>
+            </div>
+
+            {myEncodedStudents.length === 0 ? (
+              <div className="flex min-h-40 flex-col items-center justify-center px-5 text-center">
+                <FileText size={24} className="text-slate-300" />
+                <p className="mt-2 text-xs font-medium text-slate-700">No encoded student records yet</p>
+                <p className="mt-1 text-[11px] text-slate-500">Your student information and credentials will appear here.</p>
+              </div>
+            ) : (
+              <div className="max-h-[70vh] divide-y divide-slate-100 overflow-y-auto overscroll-contain">
+                {visibleEncodedStudents.map(({ studentId: recordStudentId, documents }) => {
+                  const student = documents[0];
+                  const collegeName = student.college
+                    || Object.entries(COLLEGE_COURSES).find(([, courses]) => courses.includes(student.course ?? ""))?.[0]
+                    || student.classification
+                    || "—";
+                  const overallStatus = documents.some((document) => (document.approvalStatus ?? "approved") === "pending")
+                    ? "pending"
+                    : documents.some((document) => document.approvalStatus === "rejected") ? "rejected" : "approved";
+                  const overallStyles = overallStatus === "pending" ? "bg-amber-50 text-amber-700" : overallStatus === "rejected" ? "bg-rose-50 text-rose-700" : "bg-emerald-50 text-emerald-700";
+                  const overallIcon = overallStatus === "pending" ? Clock3 : overallStatus === "rejected" ? CircleX : CircleCheck;
+                  const OverallIcon = overallIcon;
+                  return (
+                    <article key={recordStudentId} className="p-4 sm:p-5">
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                          <h3 className="text-sm font-semibold text-slate-900">{student.studentName}</h3>
+                          <p className="mt-1 text-xs text-slate-500">{recordStudentId} · {documents.length} credential{documents.length === 1 ? "" : "s"}</p>
+                        </div>
+                        <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold ${overallStyles}`}><OverallIcon size={13} /> Overall: {overallStatus === "pending" ? "Pending Review" : overallStatus === "rejected" ? "Rejected" : "Approved"}</span>
+                      </div>
+
+                      <dl className="mt-4 grid gap-x-5 gap-y-3 rounded-lg bg-slate-50 p-3 text-xs sm:grid-cols-2 lg:grid-cols-3">
+                        <div><dt className="text-[10px] text-slate-500">Student Name</dt><dd className="mt-0.5 font-medium text-slate-800">{student.studentName || "—"}</dd></div>
+                        <div><dt className="text-[10px] text-slate-500">Student ID</dt><dd className="mt-0.5 font-medium text-slate-800">{student.studentId || "—"}</dd></div>
+                        <div><dt className="text-[10px] text-slate-500">Email</dt><dd className="mt-0.5 break-all font-medium text-slate-800">{student.email || "—"}</dd></div>
+                        <div><dt className="text-[10px] text-slate-500">College / Classification</dt><dd className="mt-0.5 font-medium text-slate-800">{collegeName}</dd></div>
+                        <div><dt className="text-[10px] text-slate-500">Course</dt><dd className="mt-0.5 font-medium text-slate-800">{student.course ? COURSE_LABELS[student.course] ?? student.course : "—"}</dd></div>
+                        <div><dt className="text-[10px] text-slate-500">Major</dt><dd className="mt-0.5 font-medium text-slate-800">{student.major || "—"}</dd></div>
+                        <div><dt className="text-[10px] text-slate-500">Year Level</dt><dd className="mt-0.5 font-medium text-slate-800">{student.yearLevel || "—"}</dd></div>
+                        <div><dt className="text-[10px] text-slate-500">School Year</dt><dd className="mt-0.5 font-medium text-slate-800">{student.schoolYear || "—"}</dd></div>
+                        <div><dt className="text-[10px] text-slate-500">Date Submitted</dt><dd className="mt-0.5 font-medium text-slate-800">{student.dateSubmitted || "—"}</dd></div>
+                        {student.remarks && <div className="sm:col-span-2 lg:col-span-3"><dt className="text-[10px] text-slate-500">Remarks</dt><dd className="mt-0.5 font-medium text-slate-800">{student.remarks}</dd></div>}
+                      </dl>
+
+                      <div className="mt-4">
+                        <h4 className="mb-2 text-xs font-semibold text-slate-700">Credentials and review status</h4>
+                        <div className="space-y-2">
+                          {documents.map((document) => {
+                            const status = document.approvalStatus ?? "approved";
+                            const statusStyles = status === "pending" ? "bg-amber-50 text-amber-700" : status === "rejected" ? "bg-rose-50 text-rose-700" : "bg-emerald-50 text-emerald-700";
+                            const StatusIcon = status === "pending" ? Clock3 : status === "rejected" ? CircleX : CircleCheck;
+                            return (
+                              <div key={document.id} className="flex flex-col gap-2 rounded-lg border border-slate-200 p-3 sm:flex-row sm:items-center">
+                                <FileText size={16} className="hidden shrink-0 text-blue-600 sm:block" />
+                                <div className="min-w-0 flex-1"><p className="text-xs font-medium text-slate-800">{document.documentType}</p><p className="mt-0.5 truncate text-[10px] text-slate-500" title={document.fileName}>{document.fileName}</p>{document.approvalReviewedBy && <p className="mt-1 text-[10px] text-slate-500">Reviewed by {document.approvalReviewedBy}</p>}</div>
+                                <span className={`inline-flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold ${statusStyles}`}><StatusIcon size={13} /> {status === "pending" ? "Pending Review" : status === "rejected" ? "Rejected" : "Approved"}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            )}
+
+            {myEncodedStudents.length > 0 && (
+              <footer className="flex flex-col gap-3 border-t border-slate-100 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+                <p className="text-xs text-slate-500">
+                  Showing <span className="font-semibold text-slate-700">{firstEncodedStudent}–{lastEncodedStudent}</span> of <span className="font-semibold text-slate-700">{myEncodedStudents.length}</span> students
+                </p>
+                <nav aria-label="Encoded student records pagination" className="flex items-center justify-end gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setEncodedStudentsPage((page) => Math.max(1, page - 1))}
+                    disabled={encodedStudentsPage === 1}
+                    aria-label="Previous student records page"
+                    className="inline-flex h-9 items-center gap-1 rounded-lg border border-slate-200 px-3 text-xs font-medium text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    <ChevronLeft size={15} /> <span className="hidden sm:inline">Previous</span>
+                  </button>
+                  <span aria-live="polite" className="min-w-16 px-2 text-center text-xs font-medium text-slate-600">Page {encodedStudentsPage} of {encodedStudentsPageCount}</span>
+                  <button
+                    type="button"
+                    onClick={() => setEncodedStudentsPage((page) => Math.min(encodedStudentsPageCount, page + 1))}
+                    disabled={encodedStudentsPage === encodedStudentsPageCount}
+                    aria-label="Next student records page"
+                    className="inline-flex h-9 items-center gap-1 rounded-lg border border-slate-200 px-3 text-xs font-medium text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    <span className="hidden sm:inline">Next</span> <ChevronRight size={15} />
+                  </button>
+                </nav>
+              </footer>
+            )}
           </section>
         </div>
       </main>

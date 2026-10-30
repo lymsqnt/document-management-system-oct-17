@@ -12,6 +12,11 @@ export type AuditAction =
   | "Account Rejected"
   | "Student Encoding Approved"
   | "Student Encoding Rejected"
+  | "Document Request Released"
+  | "Document Request Approved"
+  | "Document Request Rejected"
+  | "Document Viewed"
+  | "Document Downloaded"
   | "Role Created"
   | "Role Updated"
   | "Role Deleted";
